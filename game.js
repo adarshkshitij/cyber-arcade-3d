@@ -37,6 +37,10 @@
   const modeCards = document.querySelectorAll('.mode-card');
   const diffButtons = document.querySelectorAll('.diff-btn:not(.mode-selector-btn)');
   const dpadButtons = document.querySelectorAll('.dpad-btn');
+  const gameContainer = document.getElementById('gameContainer');
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const toggleDpadBtn = document.getElementById('toggleDpadBtn');
+  const dpadContainer = document.getElementById('dpadContainer');
 
   // Audio Synthesizer (Web Audio API)
   const SoundFX = (function () {
@@ -414,11 +418,36 @@
 
   function onWindowResize() {
     if (!renderer || !container) return;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    const rect = container.getBoundingClientRect();
+    const width = rect.width || container.clientWidth || window.innerWidth;
+    const height = rect.height || container.clientHeight || 500;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height);
+  }
+
+  function toggleFullscreen() {
+    const target = gameContainer || container;
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (target.requestFullscreen) {
+        target.requestFullscreen().catch(() => {});
+      } else if (target.webkitRequestFullscreen) {
+        target.webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+    setTimeout(onWindowResize, 100);
+  }
+
+  function toggleDpad() {
+    if (dpadContainer) {
+      dpadContainer.classList.toggle('force-show');
+    }
   }
 
   function gridToWorld(gx, gy) {
@@ -864,6 +893,23 @@
       setCameraView(cameraMode === 'isometric' ? 'follow' : 'isometric');
     });
 
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleFullscreen();
+      });
+    }
+
+    if (toggleDpadBtn) {
+      toggleDpadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleDpad();
+      });
+    }
+
+    document.addEventListener('fullscreenchange', onWindowResize);
+    document.addEventListener('webkitfullscreenchange', onWindowResize);
+
     restartBtn.addEventListener('click', (e) => {
       e.preventDefault();
       initGame();
@@ -917,6 +963,10 @@
         case 'l':
         case 'L':
           toggleModeModal();
+          break;
+        case 'f':
+        case 'F':
+          toggleFullscreen();
           break;
         case 'r':
         case 'R':

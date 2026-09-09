@@ -42,7 +42,7 @@
           <span id="currentModeLabel">Classic</span>
         </button>
 
-        <!-- Audio, Pause, and Camera Buttons -->
+        <!-- Audio, Pause, Camera, and Fullscreen Buttons -->
         <div class="icon-controls">
           <button id="muteBtn" class="icon-btn" type="button" aria-label="Toggle Sound" aria-pressed="false" title="Toggle Sound (M)">
             <span class="icon-on">🔊</span>
@@ -54,6 +54,9 @@
           </button>
           <button id="cameraBtn" class="icon-btn" type="button" aria-label="Toggle Camera Angle" title="Switch 3D View (C)">
             <span>🎥</span>
+          </button>
+          <button id="fullscreenBtn" class="icon-btn" type="button" aria-label="Toggle Fullscreen" title="Toggle Fullscreen (F)">
+            <span>⛶</span>
           </button>
         </div>
       </div>
@@ -81,8 +84,19 @@
       </div>
     </div>
 
+    <!-- Desktop Keyboard HUD Legend -->
+    <div class="desktop-controls-bar" id="desktopControlsBar" aria-label="Desktop Controls Guide">
+      <span class="key-pill"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Steer</span>
+      <span class="key-pill"><kbd>Space</kbd> Pause</span>
+      <span class="key-pill"><kbd>L</kbd> Modes</span>
+      <span class="key-pill"><kbd>C</kbd> Camera</span>
+      <span class="key-pill"><kbd>F</kbd> Fullscreen</span>
+      <span class="key-pill"><kbd>M</kbd> Mute</span>
+      <button id="toggleDpadBtn" class="key-pill toggle-dpad-btn" type="button" title="Toggle Touch D-Pad">📱 Touch Pad</button>
+    </div>
+
     <!-- Responsive Tactile 3D D-Pad -->
-    <div class="dpad-container">
+    <div class="dpad-container" id="dpadContainer">
       <div class="dpad" aria-label="Touch D-Pad Controls">
         <button class="dpad-btn dpad-up" id="dpadUp" data-dir="up" aria-label="Move Up" type="button">▲</button>
         <button class="dpad-btn dpad-left" id="dpadLeft" data-dir="left" aria-label="Move Left" type="button">◀</button>

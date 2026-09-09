@@ -13,9 +13,9 @@
     "coderabbit:review": "bash scripts/coderabbit-check.sh",
     "aws:deploy": "bash devops/aws/deploy-s3-cloudfront.sh",
     "aws:budget": "bash devops/aws/setup-zero-cost-budget.sh",
-    "docker:build": "docker compose build",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
   },
   "keywords": [
     "snake",
