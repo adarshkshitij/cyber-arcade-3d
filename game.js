@@ -52,6 +52,12 @@
   const nitroFill = document.getElementById('nitroFill');
   const dpadNitro = document.getElementById('dpadNitro');
   const gameHint = document.getElementById('gameHint');
+  const trophyBtn = document.getElementById('trophyBtn');
+  const trophyModal = document.getElementById('trophyModal');
+  const closeTrophyModalBtn = document.getElementById('closeTrophyModalBtn');
+  const trophyGrid = document.getElementById('trophyGrid');
+  const trophyProgress = document.getElementById('trophyProgress');
+  const toastContainer = document.getElementById('toastContainer');
 
   // Audio Synthesizer (Web Audio API)
   const SoundFX = (function () {
@@ -124,6 +130,12 @@
       nitroPickup: function () {
         playTone(784, 'triangle', 0.12, 0.25);
         setTimeout(() => playTone(1046, 'triangle', 0.18, 0.25), 70);
+      },
+      trophy: function () {
+        // Triumphant ascending arpeggio for achievement unlocks
+        [523, 659, 784, 1046].forEach((f, i) => {
+          setTimeout(() => playTone(f, 'triangle', 0.22, 0.28), i * 90);
+        });
       },
       swerve: function () {
         playTone(280, 'sawtooth', 0.08, 0.08);
@@ -731,6 +743,9 @@
     highScoreVal.textContent = racerState.highScore;
     if (speedVal) speedVal.innerHTML = Math.round(racerState.speed) + ' <small>km/h</small>';
     if (nitroFill) nitroFill.style.width = '50%';
+
+    recordAchievementEvent('racer_run_start', {});
+    recordAchievementEvent('vehicle_driven', { vehicle: currentVehicle });
   }
 
   function triggerRacerGameOver() {
@@ -760,6 +775,7 @@
       if (playerCarGroup) {
         create3DParticles(playerCarGroup.position.x, 0.2, 'freeze', 18);
       }
+      recordAchievementEvent('racer_nitro', {});
     }
   }
 
@@ -830,6 +846,7 @@
       if (nitroFill) {
         nitroFill.style.width = Math.round(racerState.nitro) + '%';
       }
+      recordAchievementEvent('racer_speed', { speed: racerState.speed });
 
       syncTrafficMeshes(racerState.traffic);
       syncNitroMeshes(racerState.nitroPickups);
@@ -1128,6 +1145,117 @@
     initGame();
   }
 
+  // --------------------------------------------------------------------------
+  // Trophy Cabinet - Achievements UI (modal + real-time unlock toasts)
+  // --------------------------------------------------------------------------
+  function isAnyRunActive() {
+    if (activeGame === 'racer') {
+      return isGameStarted && racerState && !racerState.isPaused && !racerState.isGameOver;
+    }
+    return isGameStarted && gameState && !gameState.isPaused && !gameState.isGameOver;
+  }
+
+  function renderTrophyModal() {
+    if (typeof Achievements === 'undefined' || !trophyGrid) return;
+    const achievements = Achievements.getAchievements();
+
+    if (trophyProgress) {
+      trophyProgress.textContent = `${Achievements.getUnlockedCount()}/${achievements.length}`;
+    }
+
+    trophyGrid.innerHTML = '';
+    achievements.forEach((a) => {
+      const card = document.createElement('div');
+      card.className = 'trophy-card' + (a.unlocked ? ' unlocked' : '');
+
+      const icon = document.createElement('span');
+      icon.className = 'trophy-card-icon';
+      icon.textContent = a.icon;
+      card.appendChild(icon);
+
+      const body = document.createElement('div');
+      body.className = 'trophy-card-body';
+
+      const name = document.createElement('div');
+      name.className = 'trophy-card-name';
+      name.textContent = a.name;
+      body.appendChild(name);
+
+      const desc = document.createElement('div');
+      desc.className = 'trophy-card-desc';
+      desc.textContent = a.description;
+      body.appendChild(desc);
+
+      card.appendChild(body);
+
+      if (!a.unlocked) {
+        const lock = document.createElement('span');
+        lock.className = 'trophy-card-lock';
+        lock.textContent = '🔒';
+        card.appendChild(lock);
+      }
+
+      trophyGrid.appendChild(card);
+    });
+  }
+
+  let trophyModalAutoPaused = false;
+
+  function toggleTrophyModal(open) {
+    if (!trophyModal) return;
+    const shouldOpen = open !== undefined ? open : trophyModal.hidden;
+    trophyModal.hidden = !shouldOpen;
+
+    if (shouldOpen) {
+      renderTrophyModal();
+      if (isAnyRunActive()) {
+        trophyModalAutoPaused = true;
+        togglePause();
+      }
+    } else if (trophyModalAutoPaused) {
+      // Only resume the run if opening the modal was what paused it (don't
+      // fight a pause the player set deliberately before opening this).
+      trophyModalAutoPaused = false;
+      togglePause();
+    }
+  }
+
+  function showAchievementToast(achievement) {
+    if (!toastContainer) return;
+    const toast = document.createElement('div');
+    toast.className = 'achievement-toast';
+    toast.innerHTML = `
+      <span class="achievement-toast-icon">${achievement.icon}</span>
+      <span class="achievement-toast-body">
+        <span class="achievement-toast-label">Achievement Unlocked</span><br>
+        <span class="achievement-toast-name">${achievement.name}</span>
+      </span>
+    `;
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('toast-exit');
+      toast.addEventListener('animationend', () => toast.remove(), { once: true });
+      // Safety net in case animationend never fires (e.g. reduced-motion)
+      setTimeout(() => toast.remove(), 400);
+    }, 3200);
+  }
+
+  function handleNewAchievements(newlyUnlocked) {
+    if (!newlyUnlocked || newlyUnlocked.length === 0) return;
+    SoundFX.trophy();
+    newlyUnlocked.forEach((a) => showAchievementToast(a));
+    if (trophyModal && !trophyModal.hidden) {
+      renderTrophyModal();
+    }
+  }
+
+  function recordAchievementEvent(type, payload) {
+    if (typeof Achievements === 'undefined') return;
+    const newlyUnlocked = Achievements.recordEvent(type, payload);
+    handleNewAchievements(newlyUnlocked);
+  }
+
   function toggleModeModal(open) {
     if (!modeModal) return;
     const shouldOpen = open !== undefined ? open : modeModal.hidden;
@@ -1274,12 +1402,14 @@
             SoundFX.warp();
             const headPos = gridToWorld(gameState.snake[0].x, gameState.snake[0].y);
             create3DParticles(headPos.x, headPos.z, 'warp', 16);
+            recordAchievementEvent('portal_wrap', {});
           }
 
           if (tickResult.ateFood) {
             updateScoreDisplay();
             const food = tickResult.foodEaten;
             const wPos = gridToWorld(food.x, food.y);
+            recordAchievementEvent('snake_score', { score: gameState.score });
 
             if (food.type === 'golden') {
               SoundFX.golden();
@@ -1287,6 +1417,7 @@
             } else if (food.type === 'freeze') {
               SoundFX.freeze();
               create3DParticles(wPos.x, wPos.z, 'freeze', 25);
+              recordAchievementEvent('snake_freeze', {});
             } else {
               SoundFX.eat();
               create3DParticles(wPos.x, wPos.z, 'normal', 18);
@@ -1483,6 +1614,20 @@
       });
     });
 
+    if (trophyBtn) {
+      trophyBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleTrophyModal();
+      });
+    }
+
+    if (closeTrophyModalBtn) {
+      closeTrophyModalBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleTrophyModal(false);
+      });
+    }
+
     cameraBtn.addEventListener('click', (e) => {
       e.preventDefault();
       setCameraView(cameraMode === 'isometric' ? 'follow' : 'isometric');
@@ -1649,6 +1794,10 @@
           if (activeGame === 'snake') {
             cameraBtn.click();
           }
+          break;
+        case 't':
+        case 'T':
+          toggleTrophyModal();
           break;
       }
     });

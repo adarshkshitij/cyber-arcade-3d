@@ -12,7 +12,8 @@
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg?logo=docker)](Dockerfile)
 [![CodeRabbit Review](https://img.shields.io/badge/CodeRabbit-AI%20Reviewed-ffd700.svg)](CODERABBIT_REVIEW.md)
 [![SonarCloud Quality Gate](https://img.shields.io/badge/SonarCloud-Quality%20Gate%20A-4E9BCD.svg?logo=sonarcloud&logoColor=white)](sonar-project.properties)
-[![Tests Passing](https://img.shields.io/badge/Tests-50%2F50%20Passing-00ffaa.svg)](test/)
+[![Tests Passing](https://img.shields.io/badge/Tests-67%2F67%20Passing-00ffaa.svg)](test/)
+[![Arcade Trophies](https://img.shields.io/badge/Trophies-8%20Cyber%20Achievements-ffd700.svg)](#-arcade-trophies--achievement-system)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ffaa.svg)](LICENSE)
 
 **A hardware-accelerated 3D WebGL cyberpunk arcade cabinet featuring Neon Snake and Turbo Highway Racer with real-time dynamic lighting, procedural 8-bit sound synthesis, and responsive widescreen controls.**
@@ -96,6 +97,19 @@ Players can select between 3 deterministic vehicle classes directly from the HUD
   - ⚡ **Hyper Speed Demon**: Progressive speed acceleration on every food item consumed (`2x PTS`).
 - **Dynamic Headlight Tracking**: Point light physically mounted to the snake head adapting dynamically to the active arena theme.
 - **3D Particle Physics**: Volumetric cube particle bursts on food consumption, speed warps, and collisions.
+
+### 🏆 Arcade Trophies & Achievement System (`achievements.js`)
+An in-game trophy tracker with real-time HUD toasts, glassmorphism modal, synthesized victory chimes, and `localStorage` persistence:
+| Trophy | Icon | Requirement | Tier |
+|:---|:---:|:---|:---:|
+| **First Byte** | 🥇 | Score your first point in Snake | Bronze |
+| **Century Serpent** | 🐍 | Reach a score of 100 in Snake | Gold |
+| **Speed Demon** | 🏎️ | Reach 250 km/h in Turbo Racer | Silver |
+| **Nitro Overload** | ⚡ | Trigger 5 Nitro boosts in a single race | Silver |
+| **Cyber Collector** | 🛠️ | Test-drive all 3 vehicles (Interceptor, Speeder, Titan) | Gold |
+| **Cryo Master** | ❄️ | Consume a freeze powerup in Snake | Bronze |
+| **Warp Runner** | 🌀 | Wrap through portal boundaries 10 times | Silver |
+| **Arcade Legend** | 🏆 | Unlock 5 or more arcade achievements | Platinum |
 
 ---
 

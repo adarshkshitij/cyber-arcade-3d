@@ -88,6 +88,9 @@
           <button id="fullscreenBtn" class="icon-btn" type="button" aria-label="Toggle Fullscreen" title="Toggle Fullscreen (F)">
             <span>⛶</span>
           </button>
+          <button id="trophyBtn" class="icon-btn" type="button" aria-label="Trophies & Achievements" title="Trophies & Achievements">
+            <span>🏆</span>
+          </button>
         </div>
       </div>
     </div>
@@ -212,9 +215,23 @@
     </div>
   </div>
 
+  <!-- Trophy Cabinet - Achievements Modal -->
+  <div id="trophyModal" class="modal-backdrop" hidden>
+    <div class="modal-card trophy-modal-card">
+      <button class="modal-close-btn" id="closeTrophyModalBtn" type="button" aria-label="Close Trophy Cabinet">✕</button>
+      <h2 class="game-over-title trophy-modal-title">🏆 TROPHY CABINET</h2>
+      <p class="modal-subtitle">Unlocked: <span id="trophyProgress">0/8</span></p>
+      <div class="trophy-grid" id="trophyGrid" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- Real-time achievement unlock toasts -->
+  <div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
   <!-- Core deterministic engines -->
   <script src="engine.js"></script>
   <script src="racer-engine.js"></script>
+  <script src="achievements.js"></script>
   <!-- 3D WebGL game loop and UI controller -->
   <script src="game.js"></script>
   <!-- Service Worker registration for PWA offline play -->
