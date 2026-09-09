@@ -37,6 +37,7 @@
   const modeCards = document.querySelectorAll('.mode-card');
   const diffButtons = document.querySelectorAll('.diff-btn:not(.mode-selector-btn)');
   const dpadButtons = document.querySelectorAll('.dpad-btn');
+  const vehicleButtons = document.querySelectorAll('.vehicle-btn');
   const gameContainer = document.getElementById('gameContainer');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const toggleDpadBtn = document.getElementById('toggleDpadBtn');
@@ -525,19 +526,35 @@
     scene.add(highwayGroup);
   }
 
+  // Cyber Garage - per-vehicle 3D theming (colors only; chassis geometry
+  // stays shared so this remains a cheap "reskin", not a new car per vehicle)
+  const VEHICLE_THEMES = {
+    interceptor: { body: 0x00e5ff, emissive: 0x003344, headlight: 0xbfe9ff, scale: 1.0 },
+    speeder: { body: 0xffee00, emissive: 0x554400, headlight: 0xfff6c2, scale: 0.96 },
+    titan: { body: 0xbf55ec, emissive: 0x3a1550, headlight: 0xe4bfff, scale: 1.08 }
+  };
+
   function createPlayerCar3D() {
     if (playerCarGroup) {
+      // Dispose the previous vehicle's geometries/materials before dropping
+      // the reference - createPlayerCar3D() builds fresh (non-shared) ones
+      // on every call, so switching vehicles repeatedly would otherwise leak.
+      playerCarGroup.traverse((child) => {
+        if (child.isMesh) disposeMesh(child);
+      });
       scene.remove(playerCarGroup);
     }
     playerCarGroup = new THREE.Group();
 
+    const theme = VEHICLE_THEMES[currentVehicle] || VEHICLE_THEMES.interceptor;
+
     // Main wedge chassis
     const bodyGeo = new THREE.BoxGeometry(1.6, 0.45, 3.2);
     const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x00e5ff,
+      color: theme.body,
       metalness: 0.8,
       roughness: 0.2,
-      emissive: 0x003344
+      emissive: theme.emissive
     });
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.y = 0.4;
@@ -566,7 +583,7 @@
       hl.position.set(x, 0.38, 1.62);
       playerCarGroup.add(hl);
 
-      const spot = new THREE.SpotLight(0xbfe9ff, 2.4, 24, Math.PI / 7, 0.4, 1.4);
+      const spot = new THREE.SpotLight(theme.headlight, 2.4, 24, Math.PI / 7, 0.4, 1.4);
       spot.position.set(x, 0.42, 1.7);
       const target = new THREE.Object3D();
       target.position.set(x * 0.3, -0.3, 14);
@@ -603,7 +620,9 @@
     });
 
     playerCarGroup.position.set(0, 0, 0);
+    playerCarGroup.scale.setScalar(theme.scale);
     playerCarGroup.visible = (activeGame === 'racer');
+    playerCarGroup.userData.vehicle = currentVehicle;
     scene.add(playerCarGroup);
   }
 
@@ -694,7 +713,8 @@
     const previousBest = parseInt(localStorage.getItem('racer_3d_high_score') || '0', 10);
     racerState = RacerEngine.createRacerState({
       highScore: previousBest,
-      difficulty: currentDifficulty
+      difficulty: currentDifficulty,
+      vehicle: currentVehicle
     });
 
     trafficCarMeshes.forEach(mesh => scene.remove(mesh));
@@ -1092,6 +1112,9 @@
   };
   let currentDifficulty = 'normal';
 
+  const VEHICLE_STORAGE_KEY = 'arcade_vehicle';
+  let currentVehicle = localStorage.getItem(VEHICLE_STORAGE_KEY) || 'interceptor';
+
   function setMode(mode) {
     if (!SnakeEngine.MODES[mode.toUpperCase()]) return;
     currentMode = mode;
@@ -1305,6 +1328,40 @@
     }
   }
 
+  function setVehicle(vehicleId) {
+    if (typeof RacerEngine === 'undefined' || typeof RacerEngine.getVehicles !== 'function') return;
+    const vehicles = RacerEngine.getVehicles();
+    if (!vehicles[vehicleId]) return;
+
+    currentVehicle = vehicleId;
+    localStorage.setItem(VEHICLE_STORAGE_KEY, currentVehicle);
+
+    vehicleButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.vehicle === currentVehicle);
+    });
+
+    // If a race is already in progress, re-apply the vehicle's speed/nitro
+    // traits to the live state instead of restarting the run (same pattern
+    // as setDifficulty above).
+    if (racerState && !racerState.isGameOver) {
+      const vehicleConfig = vehicles[currentVehicle];
+      const diffConf = RacerEngine.DIFFICULTY_SETTINGS[racerState.difficulty] || RacerEngine.DIFFICULTY_SETTINGS.normal;
+      racerState.vehicle = currentVehicle;
+      racerState.vehicleConfig = vehicleConfig;
+      racerState.baseSpeed = diffConf.baseSpeed + vehicleConfig.speedBonus;
+      racerState.maxSpeed = diffConf.maxSpeed + vehicleConfig.speedBonus;
+      if (!racerState.isBoosting) {
+        racerState.speed = racerState.baseSpeed;
+      }
+    }
+
+    // Rebuild the 3D car mesh cleanly (old geometries/materials disposed
+    // inside createPlayerCar3D) so the garage reskin applies instantly.
+    if (scene) {
+      createPlayerCar3D();
+    }
+  }
+
   function togglePause() {
     if (activeGame === 'racer') {
       if (!racerState || racerState.isGameOver || !isGameStarted) return;
@@ -1364,6 +1421,18 @@
         e.preventDefault();
         setDifficulty(btn.dataset.difficulty);
       });
+    });
+
+    vehicleButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setVehicle(btn.dataset.vehicle);
+      });
+    });
+    // Sync the active vehicle button with whatever was restored from
+    // localStorage (default markup assumes 'interceptor').
+    vehicleButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.vehicle === currentVehicle);
     });
 
     muteBtn.addEventListener('click', (e) => {

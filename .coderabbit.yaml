@@ -1,8 +1,8 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 # ==============================================================================
 # 🐇 CodeRabbit AI Configuration (.coderabbit.yaml)
 # Production static architecture, security & code review guidelines
 # ==============================================================================
-version: "2"
 language: "en-US"
 tone_instructions: "Act as a Senior Principal Graphics & Web Performance Engineer. Be concise, actionable, and focus on memory leaks, deterministic physics state machines, and WebGL resource lifecycles."
 

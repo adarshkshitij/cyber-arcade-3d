@@ -24,17 +24,59 @@
     blitz: { baseSpeed: 160, maxSpeed: 290, trafficRate: 750, boostMultiplier: 1.8 }
   };
 
+  // Cyber Garage - selectable vehicles. speedBonus shifts both baseSpeed and
+  // maxSpeed (km/h) up or down from the difficulty preset; nitroRate scales
+  // how long a nitro boost lasts in activateBoost().
+  const VEHICLES = {
+    interceptor: {
+      id: 'interceptor',
+      name: 'Interceptor',
+      icon: '🏎️',
+      speedBonus: 0,
+      handling: 1.0,
+      nitroRate: 1.0,
+      description: 'Balanced all-rounder.'
+    },
+    speeder: {
+      id: 'speeder',
+      name: 'Speeder',
+      icon: '⚡',
+      speedBonus: 20,
+      handling: 1.3,
+      nitroRate: 1.0,
+      description: '+20 km/h top speed, high handling.'
+    },
+    titan: {
+      id: 'titan',
+      name: 'Titan',
+      icon: '🛡️',
+      speedBonus: -10,
+      handling: 0.85,
+      nitroRate: 1.4,
+      description: '-10 km/h top speed, 1.4x nitro duration.'
+    }
+  };
+
+  function getVehicles() {
+    return VEHICLES;
+  }
+
   function createRacerState(options = {}) {
     const difficulty = options.difficulty || 'normal';
     const config = DIFFICULTY_SETTINGS[difficulty] || DIFFICULTY_SETTINGS.normal;
+
+    const vehicle = VEHICLES[options.vehicle] ? options.vehicle : 'interceptor';
+    const vehicleConfig = VEHICLES[vehicle];
+    const baseSpeed = config.baseSpeed + vehicleConfig.speedBonus;
+    const maxSpeed = config.maxSpeed + vehicleConfig.speedBonus;
 
     return {
       lane: 0,              // -1 = Left, 0 = Center, 1 = Right
       targetLane: 0,
       laneOffset: 0,        // -1.0 to 1.0 smooth lateral position
-      speed: config.baseSpeed, // km/h
-      baseSpeed: config.baseSpeed,
-      maxSpeed: config.maxSpeed,
+      speed: baseSpeed,      // km/h
+      baseSpeed,
+      maxSpeed,
       distance: 0,          // Total meters traveled
       score: 0,
       highScore: options.highScore || 0,
@@ -47,6 +89,8 @@
       isPaused: false,
       lastSpawnTime: 0,
       difficulty,
+      vehicle,
+      vehicleConfig,
       nextCarId: 1,
       nextPickupId: 1
     };
@@ -88,8 +132,9 @@
     if (state.isGameOver || state.isPaused || state.nitro < 20 || state.isBoosting) {
       return false;
     }
+    const nitroRate = (state.vehicleConfig && state.vehicleConfig.nitroRate) || 1.0;
     state.isBoosting = true;
-    state.boostTimeRemaining = 3500; // 3.5 seconds of boost
+    state.boostTimeRemaining = 3500 * nitroRate; // 3.5s base, scaled per vehicle
     state.nitro = Math.max(0, state.nitro - 25);
     return true;
   }
@@ -223,7 +268,8 @@
   function resetRacer(state) {
     const highScore = state ? state.highScore : 0;
     const difficulty = state ? state.difficulty : 'normal';
-    return createRacerState({ highScore, difficulty });
+    const vehicle = state ? state.vehicle : 'interceptor';
+    return createRacerState({ highScore, difficulty, vehicle });
   }
 
   return {
@@ -231,6 +277,8 @@
     LANE_WIDTH,
     HIGHWAY_LENGTH,
     DIFFICULTY_SETTINGS,
+    VEHICLES,
+    getVehicles,
     createRacerState,
     steer,
     steerContinuous,
