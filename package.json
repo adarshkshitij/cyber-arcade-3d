@@ -1,7 +1,7 @@
 {
-  "name": "3d-neon-snake-arcade",
-  "version": "1.1.0",
-  "description": "Cyberpunk 3D WebGL Arcade: Neon Snake & Turbo Highway Racer with Web Audio synth and E2E tests",
+  "name": "cyber-arcade-3d",
+  "version": "1.2.0",
+  "description": "3D WebGL Cyberpunk Arcade: Neon Snake & Turbo Highway Racer with Web Audio synth and E2E tests",
   "main": "game.js",
   "scripts": {
     "dev": "python3 -m http.server 8000",

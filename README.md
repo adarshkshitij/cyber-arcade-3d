@@ -1,9 +1,9 @@
-# 🕹️ 3D Cyberpunk Arcade: Neon Snake & Turbo Highway Racer
+# 🕹️ Cyber Arcade 3D: Neon Snake & Cyber Highway Racer
 
 <div align="center">
 
 [![CI Pipeline](https://img.shields.io/badge/CI%20Pipeline-Passing%20(Node%2018%2F20%2F22)-00ffaa.svg?logo=github-actions&logoColor=white)](devops/workflows/ci.yml)
-[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Deployment-00e5ff.svg?logo=github&logoColor=white)](https://adarshkshitij.github.io/snake-game)
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Deployment-00e5ff.svg?logo=github&logoColor=white)](https://adarshkshitij.github.io/cyber-arcade-3d)
 [![Multi-Agent Swarm](https://img.shields.io/badge/Architecture-Multi--Agent%20Swarm-9945FF.svg?logo=openai&logoColor=white)](#-multi-agent-autonomous-engineering)
 [![Headless Cloud](https://img.shields.io/badge/Env-Headless%20Ubuntu%20%2F%20AWS-E95420.svg?logo=ubuntu&logoColor=white)](#-headless-linux--cloud-architecture)
 [![AWS S3 + CloudFront](https://img.shields.io/badge/AWS-S3%20%2B%20CloudFront%20Ready-FF9900.svg?logo=amazon-aws)](AWS_DEPLOYMENT_GUIDE.md)
@@ -14,7 +14,7 @@
 
 **A hardware-accelerated 3D WebGL cyberpunk arcade cabinet featuring Neon Snake and Turbo Highway Racer with real-time dynamic lighting, procedural 8-bit sound synthesis, and responsive widescreen controls.**
 
-[🎮 Play Live Demo](https://adarshkshitij.github.io/snake-game) &bull; [☁️ AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md) &bull; [📖 Architecture](#architecture) &bull; [🚀 Quick Start](#quick-start) &bull; [🐇 CodeRabbit Audit](CODERABBIT_REVIEW.md)
+[🎮 Play Live Demo](https://adarshkshitij.github.io/cyber-arcade-3d) &bull; [☁️ AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md) &bull; [📖 Architecture](#architecture) &bull; [🚀 Quick Start](#quick-start) &bull; [🐇 CodeRabbit Audit](CODERABBIT_REVIEW.md)
 
 <br/>
 
@@ -153,8 +153,8 @@ flowchart TD
 
 ```bash
 # Clone the repository
-git clone https://github.com/adarshkshitij/snake-game.git
-cd snake-game
+git clone https://github.com/adarshkshitij/cyber-arcade-3d.git
+cd cyber-arcade-3d
 
 # Start local server
 python3 -m http.server 8000
