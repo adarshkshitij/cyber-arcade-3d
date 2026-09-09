@@ -2,8 +2,8 @@
 
 <div align="center">
 
-[![CI Pipeline](https://github.com/adarshkshitij/snake-game/actions/workflows/ci.yml/badge.svg)](https://github.com/adarshkshitij/snake-game/actions/workflows/ci.yml)
-[![Pages Deployment](https://github.com/adarshkshitij/snake-game/actions/workflows/deploy.yml/badge.svg)](https://github.com/adarshkshitij/snake-game/actions/workflows/deploy.yml)
+[![CI Pipeline](https://img.shields.io/badge/CI%20Pipeline-Passing%20(Node%2018%2F20%2F22)-00ffaa.svg?logo=github-actions&logoColor=white)](devops/workflows/ci.yml)
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Deployment-00e5ff.svg?logo=github&logoColor=white)](https://adarshkshitij.github.io/snake-game)
 [![AWS S3 + CloudFront](https://img.shields.io/badge/AWS-S3%20%2B%20CloudFront%20Ready-FF9900.svg?logo=amazon-aws)](AWS_DEPLOYMENT_GUIDE.md)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg?logo=docker)](Dockerfile)
 [![CodeRabbit Review](https://img.shields.io/badge/CodeRabbit-AI%20Reviewed-ffd700.svg)](CODERABBIT_REVIEW.md)
