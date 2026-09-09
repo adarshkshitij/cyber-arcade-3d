@@ -36,6 +36,12 @@
           <button class="diff-btn" id="diffBlitz" data-difficulty="blitz" type="button">Blitz</button>
         </div>
 
+        <!-- Mode Selection Button -->
+        <button id="modeBtn" class="diff-btn mode-selector-btn" type="button" aria-label="Select Game Mode" title="Select Game Mode (L)">
+          <span class="mode-icon">🕹️</span>
+          <span id="currentModeLabel">Classic</span>
+        </button>
+
         <!-- Audio, Pause, and Camera Buttons -->
         <div class="icon-controls">
           <button id="muteBtn" class="icon-btn" type="button" aria-label="Toggle Sound" aria-pressed="false" title="Toggle Sound (M)">
@@ -87,8 +93,57 @@
     </div>
 
     <footer class="game-footer">
-      <p class="hint">Use <kbd>Arrow Keys</kbd> or <kbd>W A S D</kbd> to steer &bull; <kbd>Space</kbd> to Pause &bull; <kbd>R</kbd> to Restart</p>
+      <p class="hint">Use <kbd>Arrow Keys</kbd> or <kbd>W A S D</kbd> to steer &bull; <kbd>Space</kbd> to Pause &bull; <kbd>L</kbd> for Modes &bull; <kbd>R</kbd> to Restart</p>
     </footer>
+  </div>
+
+  <!-- Game Mode Selection Modal -->
+  <div id="modeModal" class="modal-backdrop" hidden>
+    <div class="modal-card mode-modal-card">
+      <h2 class="game-over-title">SELECT ARCADE MODE</h2>
+      <p class="modal-subtitle">Choose your arena physics, lighting & rules</p>
+      <div class="mode-grid">
+        <div class="mode-card active" data-mode="classic">
+          <div class="mode-card-header">
+            <span class="mode-badge badge-classic">CLASSIC</span>
+            <span class="mode-mult">1x PTS</span>
+          </div>
+          <h3 class="mode-name">Classic Matrix</h3>
+          <p class="mode-desc">Solid neon perimeter wall with classic cyberpunk rules.</p>
+          <div class="mode-best">Best: <span id="bestClassic">0</span></div>
+        </div>
+        <div class="mode-card" data-mode="portal">
+          <div class="mode-card-header">
+            <span class="mode-badge badge-portal">PORTAL</span>
+            <span class="mode-mult">1x PTS</span>
+          </div>
+          <h3 class="mode-name">Cosmic Portal</h3>
+          <p class="mode-desc">Wrap-around borders teleport the snake across opposing walls.</p>
+          <div class="mode-best">Best: <span id="bestPortal">0</span></div>
+        </div>
+        <div class="mode-card" data-mode="labyrinth">
+          <div class="mode-card-header">
+            <span class="mode-badge badge-labyrinth">MAZE</span>
+            <span class="mode-mult">1.5x PTS</span>
+          </div>
+          <h3 class="mode-name">Labyrinth</h3>
+          <p class="mode-desc">Glowing obsidian hazard pillars. Avoid monolith collisions.</p>
+          <div class="mode-best">Best: <span id="bestLabyrinth">0</span></div>
+        </div>
+        <div class="mode-card" data-mode="hyper">
+          <div class="mode-card-header">
+            <span class="mode-badge badge-hyper">HYPER</span>
+            <span class="mode-mult">2x PTS</span>
+          </div>
+          <h3 class="mode-name">Speed Demon</h3>
+          <p class="mode-desc">Dynamic speed ramping on every bite with 2x score multiplier.</p>
+          <div class="mode-best">Best: <span id="bestHyper">0</span></div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="closeModeModalBtn" class="primary-btn pulse-glow" type="button">LAUNCH MISSION</button>
+      </div>
+    </div>
   </div>
 
   <!-- Game Over Modal -->

@@ -27,22 +27,27 @@
   - Rendered in full perspective 3D with customizable isometric overview or dynamic snake follow-cam (`C` key / 🎥 button).
   - Tilted metallic arena floor with glowing neon perimeter walls and shadow casting.
   - Segmented snake body with directional 3D eyes on the head.
+- **🕹️ 4 Unique Arcade Game Modes & 3D Levels**:
+  - 🟢 **Classic Matrix**: Solid neon walls, classic boundary collision, retro cyberpunk green theme (`1x PTS`).
+  - 🟣 **Cosmic Portal Warp**: Border wrap-around physics (exiting left teleports to right) with glowing portal beacons and cosmic purple nebula theme (`1x PTS`).
+  - 🟠 **Labyrinth Monoliths**: Symmetrically placed glowing obsidian hazard pillars with red alert lighting (`1.5x PTS`).
+  - ⚡ **Hyper Speed Demon**: Accelerating speed on every bite, motion trail particles, and high-velocity gameplay (`2x PTS`).
 - **💡 Dynamic Point-Light Tracking**:
-  - A real-time green point light is physically mounted to the snake head, casting moving specular reflections across the grid as you steer.
+  - A real-time point light is physically mounted to the snake head, adapting dynamically to the active arena theme (neon green, violet, molten amber, or electric cyan).
 - **🎵 Zero-Asset Procedural Web Audio**:
-  - Pure Web Audio API oscillator synthesis generating authentic retro 8-bit sounds (eating chime, golden sparkle, freeze swoosh, game over crash).
+  - Pure Web Audio API oscillator synthesis generating authentic retro sounds (eating chime, golden sparkle, freeze swoosh, **portal warp warble**, **monolith crash**, and game over).
   - One-click mute toggle (`M` key / 🔊 button) with persistent localStorage state.
 - **✨ Volumetric 3D Particle Engine**:
-  - Consuming food triggers a burst of 3D physics-driven particle cubes that scatter outward with gravity and decay.
+  - Consuming food triggers physics-driven bursts of 3D cubes with gravity and decay, color-coded to food and warp events.
 - **🍎 Multi-Tier Power-Up State Machine**:
   - **Normal Apple** (`+10 pts`): Standard growth.
   - **Golden Gem** (`+50 pts`): Double growth burst and bonus chime.
   - **Freeze Ice Cube** (`+25 pts`): Slow-motion time dilation for 5 seconds.
 - **📱 Tactile Touch D-Pad & Keyboard Controls**:
   - Fully responsive on-screen 3D push D-pad with pointer event binding for mobile/touch screens.
-  - Desktop support for Arrow Keys, `W A S D`, `Space` to Pause, `R` to Restart, and `M` to Mute.
-- **🧪 100% Automated Test Coverage**:
-  - 16 automated tests covering deterministic physics, boundary conditions, reversal prevention, and **headless Google Chrome E2E browser rendering**.
+  - Desktop support for Arrow Keys, `W A S D`, `Space` to Pause, `L` for Level/Mode select, `R` to Restart, and `M` to Mute.
+- **🧪 100% Automated Test Coverage (22 Tests Passing)**:
+  - 22 automated tests covering deterministic physics, boundary conditions, reversal prevention, **portal wrap-around math, obstacle hazard collisions, speed scaling**, and **headless Google Chrome E2E browser rendering**.
 
 ---
 
@@ -97,6 +102,7 @@ flowchart TD
 | **Steer Left** | `←` or `A` | `◀` (D-Pad) |
 | **Steer Right** | `→` or `D` | `▶` (D-Pad) |
 | **Pause / Resume** | `Space` or `P` | `⏸ / ▶` button |
+| **Select Mode / Level** | `L` | `🕹️ Mode` button |
 | **Restart Game** | `R` | `Play Again` button |
 | **Toggle Mute** | `M` | `🔊 / 🔇` button |
 | **Switch Camera** | `C` | `🎥` button |
@@ -133,30 +139,36 @@ docker compose up -d
 
 ### 3. Run Automated Tests
 
-The repository includes a comprehensive 16-test suite combining pure engine physics unit tests and headless Chrome E2E browser tests:
+The repository includes a comprehensive 22-test suite combining pure engine physics, multi-mode rules, UI controls, and headless Chrome E2E browser tests:
 
 ```bash
 npm test
 ```
 
 ```text
-✔ E2E HTTP Server: all game assets are served with HTTP 200 OK (31.8ms)
-✔ E2E Headless Chrome DOM: WebGL canvas and UI controls are properly mounted (1441.7ms)
-✔ E2E Headless Chrome WebGL: renders hardware accelerated 3D scene without crashing (1504.9ms)
-✔ Engine: createGameState initializes snake with 3 segments and default bounds (4.5ms)
-✔ Engine: movement advances the snake in the current direction (0.6ms)
-✔ Engine: isValidDirectionChange rejects direct 180 degree reversal (0.2ms)
-✔ Engine: wall collision triggers game over when crossing grid boundary (0.3ms)
-✔ Engine: self collision triggers game over when head hits body (0.5ms)
-✔ Engine: eating food increments score and grows the snake (0.3ms)
-✔ Engine: golden food awards 50 points and 2 growth units (0.3ms)
-✔ Engine: freeze food activates freeze effect and modifies current speed (0.6ms)
-✔ Buttons & Controls: Difficulty selection updates base and current speeds (3.0ms)
-✔ Buttons & Controls: Pause toggle prevents engine ticks from moving the snake (0.9ms)
-✔ Buttons & Controls: D-Pad inputs map accurately to 4 directional vectors (2.1ms)
-✔ Buttons & Controls: Illegal 180 reversal attempts from D-pad/keyboard are rejected (0.4ms)
-✔ Buttons & Controls: Restart action resets score, snake length, and game over state (0.7ms)
-ℹ tests 16 | pass 16 | fail 0 | duration_ms 3148.6
+✔ E2E HTTP Server: all game assets are served with HTTP 200 OK (30.1ms)
+✔ E2E Headless Chrome DOM: WebGL canvas and UI controls are properly mounted (1703.8ms)
+✔ E2E Headless Chrome WebGL: renders hardware accelerated 3D scene without crashing (2189.3ms)
+✔ Engine: createGameState initializes snake with 3 segments and default bounds (5.6ms)
+✔ Engine: movement advances the snake in the current direction (1.1ms)
+✔ Engine: isValidDirectionChange rejects direct 180 degree reversal (0.4ms)
+✔ Engine: wall collision triggers game over when crossing grid boundary (0.4ms)
+✔ Engine: self collision triggers game over when head hits body (0.7ms)
+✔ Engine: eating food increments score and grows the snake (0.5ms)
+✔ Engine: golden food awards 50 points and 2 growth units (0.5ms)
+✔ Engine: freeze food activates freeze effect and modifies current speed (1.0ms)
+✔ Modes: engine exports all 4 game modes and configs (1.9ms)
+✔ Modes [Portal]: snake wraps horizontally across boundaries without dying (1.2ms)
+✔ Modes [Portal]: snake wraps vertically across boundaries without dying (0.3ms)
+✔ Modes [Labyrinth]: generates obstacles and triggers obstacle collision game over (0.5ms)
+✔ Modes [Labyrinth]: food spawner never spawns food on obstacle tiles (5.8ms)
+✔ Modes [Hyper]: eating food ramps speed and doubles score multiplier (0.6ms)
+✔ Buttons & Controls: Difficulty selection updates base and current speeds (2.3ms)
+✔ Buttons & Controls: Pause toggle prevents engine ticks from moving the snake (0.7ms)
+✔ Buttons & Controls: D-Pad inputs map accurately to 4 directional vectors (1.6ms)
+✔ Buttons & Controls: Illegal 180 reversal attempts from D-pad/keyboard are rejected (0.3ms)
+✔ Buttons & Controls: Restart action resets score, snake length, and game over state (0.5ms)
+ℹ tests 22 | pass 22 | fail 0 | duration_ms 4114.5
 ```
 
 ---

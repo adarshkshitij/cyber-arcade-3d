@@ -21,15 +21,93 @@
     FREEZE: { type: 'freeze', points: 25, color: '#00ccff', grow: 1, effectDuration: 5000 }
   };
 
+  const MODES = {
+    CLASSIC: 'classic',
+    PORTAL: 'portal',
+    LABYRINTH: 'labyrinth',
+    HYPER: 'hyper'
+  };
+
+  const MODE_CONFIGS = {
+    classic: {
+      id: 'classic',
+      name: 'Classic Matrix',
+      wrapAround: false,
+      hasObstacles: false,
+      speedRamp: 0,
+      scoreMultiplier: 1.0,
+      description: 'Solid perimeter wall with retro cyberpunk rules.'
+    },
+    portal: {
+      id: 'portal',
+      name: 'Cosmic Portal Warp',
+      wrapAround: true,
+      hasObstacles: false,
+      speedRamp: 0,
+      scoreMultiplier: 1.0,
+      description: 'Wrap-around edges teleport the snake across opposing borders.'
+    },
+    labyrinth: {
+      id: 'labyrinth',
+      name: 'Labyrinth Monoliths',
+      wrapAround: false,
+      hasObstacles: true,
+      speedRamp: 0,
+      scoreMultiplier: 1.5,
+      description: 'Hazard pillars scattered in the arena. Avoid monolith collisions.'
+    },
+    hyper: {
+      id: 'hyper',
+      name: 'Hyper Speed Demon',
+      wrapAround: false,
+      hasObstacles: false,
+      speedRamp: 3,
+      minSpeed: 45,
+      scoreMultiplier: 2.0,
+      description: 'Dynamic acceleration on every bite with 2x score multiplier.'
+    }
+  };
+
+  function getObstacles(mode, width = 20, height = 20) {
+    if (mode !== MODES.LABYRINTH) return [];
+    const obstacles = [];
+    const addBlock = (x, y) => {
+      if (x >= 0 && x < width && y >= 0 && y < height) {
+        obstacles.push({ x, y });
+      }
+    };
+    // 4 Corner 2x2 Monoliths (safe from center spawn x:10, y:10)
+    const corners = [
+      { x: 4, y: 4 },
+      { x: width - 6, y: 4 },
+      { x: 4, y: height - 6 },
+      { x: width - 6, y: height - 6 }
+    ];
+    for (const c of corners) {
+      addBlock(c.x, c.y);
+      addBlock(c.x + 1, c.y);
+      addBlock(c.x, c.y + 1);
+      addBlock(c.x + 1, c.y + 1);
+    }
+    return obstacles;
+  }
+
   function createGameState(options = {}) {
     const width = options.width || 20;
     const height = options.height || 20;
     const startX = Math.floor(width / 2);
     const startY = Math.floor(height / 2);
+    const mode = options.mode || MODES.CLASSIC;
+    const modeConfig = MODE_CONFIGS[mode] || MODE_CONFIGS.classic;
+    const obstacles = getObstacles(mode, width, height);
 
     const state = {
       gridWidth: width,
       gridHeight: height,
+      mode,
+      modeConfig,
+      obstacles,
+      obstacleSet: new Set(obstacles.map(o => `${o.x},${o.y}`)),
       snake: [
         { x: startX, y: startY },
         { x: startX - 1, y: startY },
@@ -70,6 +148,11 @@
 
   function spawnFood(state, customType = null, randomFn = Math.random) {
     const occupied = new Set(state.snake.map(s => `${s.x},${s.y}`));
+    if (state.obstacleSet) {
+      for (const obs of state.obstacleSet) {
+        occupied.add(obs);
+      }
+    }
     const emptyCells = [];
 
     for (let x = 0; x < state.gridWidth; x++) {
@@ -128,14 +211,37 @@
       y: head.y + state.direction.y
     };
 
-    if (
-      newHead.x < 0 ||
-      newHead.x >= state.gridWidth ||
-      newHead.y < 0 ||
-      newHead.y >= state.gridHeight
-    ) {
+    let didWarp = false;
+    if (state.modeConfig && state.modeConfig.wrapAround) {
+      if (newHead.x < 0) {
+        newHead.x = state.gridWidth - 1;
+        didWarp = true;
+      } else if (newHead.x >= state.gridWidth) {
+        newHead.x = 0;
+        didWarp = true;
+      }
+      if (newHead.y < 0) {
+        newHead.y = state.gridHeight - 1;
+        didWarp = true;
+      } else if (newHead.y >= state.gridHeight) {
+        newHead.y = 0;
+        didWarp = true;
+      }
+    } else {
+      if (
+        newHead.x < 0 ||
+        newHead.x >= state.gridWidth ||
+        newHead.y < 0 ||
+        newHead.y >= state.gridHeight
+      ) {
+        state.isGameOver = true;
+        return { moved: false, gameOver: true, reason: 'wall_collision' };
+      }
+    }
+
+    if (state.obstacleSet && state.obstacleSet.has(`${newHead.x},${newHead.y}`)) {
       state.isGameOver = true;
-      return { moved: false, gameOver: true, reason: 'wall_collision' };
+      return { moved: false, gameOver: true, reason: 'obstacle_collision' };
     }
 
     const willGrow = state.food && newHead.x === state.food.x && newHead.y === state.food.y;
@@ -157,11 +263,17 @@
     if (willGrow) {
       ateFood = true;
       foodEaten = { ...state.food };
-      state.score += foodEaten.points;
+      const multiplier = (state.modeConfig && state.modeConfig.scoreMultiplier) || 1.0;
+      state.score += Math.round(foodEaten.points * multiplier);
       if (state.score > state.highScore) {
         state.highScore = state.score;
       }
       state.growRemaining += (foodEaten.grow - 1);
+
+      if (state.modeConfig && state.modeConfig.speedRamp > 0) {
+        const minSpeed = state.modeConfig.minSpeed || 45;
+        state.baseSpeed = Math.max(minSpeed, state.baseSpeed - state.modeConfig.speedRamp);
+      }
 
       if (foodEaten.type === 'freeze') {
         state.activeEffect = {
@@ -169,6 +281,8 @@
           expiresAt: now + (foodEaten.effectDuration || 5000)
         };
         state.currentSpeed = Math.floor(state.baseSpeed * 1.6);
+      } else if (!state.activeEffect) {
+        state.currentSpeed = state.baseSpeed;
       }
 
       spawnFood(state, null, randomFn);
@@ -186,7 +300,8 @@
       ateFood,
       foodEaten,
       score: state.score,
-      head: newHead
+      head: newHead,
+      didWarp
     };
   }
 
@@ -196,6 +311,7 @@
       height: state.gridHeight,
       highScore: Math.max(state.score, state.highScore),
       difficulty: options.difficulty || state.difficulty,
+      mode: options.mode || state.mode,
       baseSpeed: options.baseSpeed || state.baseSpeed
     });
     Object.assign(state, fresh);
@@ -203,6 +319,9 @@
   }
 
   return {
+    MODES,
+    MODE_CONFIGS,
+    getObstacles,
     DIRECTIONS,
     FOOD_TYPES,
     createGameState,

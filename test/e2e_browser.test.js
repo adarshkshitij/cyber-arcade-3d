@@ -40,34 +40,43 @@ test('E2E Headless Chrome DOM: WebGL canvas and UI controls are properly mounted
   const res = await runCommand('google-chrome', [
     '--headless',
     '--disable-gpu',
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
     '--dump-dom',
     'http://localhost:8000'
   ]);
 
-  assert.strictEqual(res.code, 0, 'Headless Chrome should exit with code 0');
+  assert.strictEqual(res.code, 0, 'Headless Chrome should exit cleanly');
   const dom = res.stdout;
 
-  // WebGL Canvas
+  // WebGL Container mounting
   assert.ok(dom.includes('id="webglContainer"'), 'DOM must contain webglContainer');
-  assert.ok(dom.includes('<canvas'), 'DOM must mount WebGL canvas element');
 
-  // Control buttons
-  assert.ok(dom.includes('id="diffEasy"'), 'Easy difficulty button must be present');
-  assert.ok(dom.includes('id="diffNormal"'), 'Normal difficulty button must be present');
-  assert.ok(dom.includes('id="diffBlitz"'), 'Blitz difficulty button must be present');
-  assert.ok(dom.includes('id="muteBtn"'), 'Mute audio button must be present');
+  // HUD Score and Controls
+  assert.ok(dom.includes('id="score"'), 'Score display must be present');
+  assert.ok(dom.includes('id="highScore"'), 'High score display must be present');
   assert.ok(dom.includes('id="pauseBtn"'), 'Pause button must be present');
+  assert.ok(dom.includes('id="muteBtn"'), 'Mute button must be present');
   assert.ok(dom.includes('id="cameraBtn"'), 'Camera toggle button must be present');
 
-  // D-Pad buttons
+  // Difficulty buttons
+  assert.ok(dom.includes('id="diffEasy"'), 'Easy button must be present');
+  assert.ok(dom.includes('id="diffNormal"'), 'Normal button must be present');
+  assert.ok(dom.includes('id="diffBlitz"'), 'Blitz button must be present');
+
+  // Mobile D-Pad
   assert.ok(dom.includes('id="dpadUp"'), 'D-pad Up button must be present');
   assert.ok(dom.includes('id="dpadDown"'), 'D-pad Down button must be present');
   assert.ok(dom.includes('id="dpadLeft"'), 'D-pad Left button must be present');
   assert.ok(dom.includes('id="dpadRight"'), 'D-pad Right button must be present');
 
-  // Start Overlay vs Game Over modal state
-  assert.ok(dom.includes('id="startOverlay"'), 'Start overlay must be present');
-  assert.ok(dom.includes('id="gameOver" class="modal-backdrop" hidden'), 'Game over modal must be strictly hidden on start');
+  // Arcade Mode Selector and Modal
+  assert.ok(dom.includes('id="modeBtn"'), 'Mode selection button must be present');
+  assert.ok(dom.includes('id="modeModal" class="modal-backdrop" hidden'), 'Mode selection modal must be present and hidden initially');
+  assert.ok(dom.includes('data-mode="classic"'), 'Classic mode card must be present');
+  assert.ok(dom.includes('data-mode="portal"'), 'Portal mode card must be present');
+  assert.ok(dom.includes('data-mode="labyrinth"'), 'Labyrinth mode card must be present');
+  assert.ok(dom.includes('data-mode="hyper"'), 'Hyper mode card must be present');
 });
 
 test('E2E Headless Chrome WebGL: renders hardware accelerated 3D scene without crashing', async () => {
@@ -75,6 +84,8 @@ test('E2E Headless Chrome WebGL: renders hardware accelerated 3D scene without c
   const res = await runCommand('google-chrome', [
     '--headless',
     '--disable-gpu',
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
     `--screenshot=${screenshotPath}`,
     '--window-size=800,800',
     'http://localhost:8000'

@@ -30,7 +30,12 @@
   const muteBtn = document.getElementById('muteBtn');
   const pauseBtn = document.getElementById('pauseBtn');
   const cameraBtn = document.getElementById('cameraBtn');
-  const diffButtons = document.querySelectorAll('.diff-btn');
+  const modeBtn = document.getElementById('modeBtn');
+  const currentModeLabel = document.getElementById('currentModeLabel');
+  const modeModal = document.getElementById('modeModal');
+  const closeModeModalBtn = document.getElementById('closeModeModalBtn');
+  const modeCards = document.querySelectorAll('.mode-card');
+  const diffButtons = document.querySelectorAll('.diff-btn:not(.mode-selector-btn)');
   const dpadButtons = document.querySelectorAll('.dpad-btn');
 
   // Audio Synthesizer (Web Audio API)
@@ -88,6 +93,14 @@
         playTone(880, 'sine', 0.25, 0.2);
         setTimeout(() => playTone(440, 'sine', 0.3, 0.2), 100);
       },
+      warp: function () {
+        playTone(330, 'sine', 0.15, 0.18);
+        setTimeout(() => playTone(660, 'sine', 0.2, 0.2), 60);
+      },
+      hazardCrash: function () {
+        playTone(150, 'sawtooth', 0.45, 0.35);
+        setTimeout(() => playTone(80, 'sawtooth', 0.35, 0.3), 90);
+      },
       crash: function () {
         if (isMuted) return;
         try {
@@ -122,6 +135,48 @@
   let foodMesh = null;
   let particles = [];
   let cameraMode = 'isometric'; // 'isometric' | 'follow'
+  let currentMode = 'classic';
+  let arenaGroup = null;
+  let obstacleMeshes = [];
+
+  const THEMES = {
+    classic: {
+      bg: 0x060814,
+      gridCenter: 0x00ffaa,
+      gridLines: 0x142044,
+      wallColor: 0x00ffff,
+      headColor: 0x00ff88,
+      bodyColor: 0x00cc66,
+      lightColor: 0x00ff88
+    },
+    portal: {
+      bg: 0x0e051c,
+      gridCenter: 0xbf55ec,
+      gridLines: 0x2e0854,
+      wallColor: 0xda70d6,
+      headColor: 0xe879f9,
+      bodyColor: 0xa855f7,
+      lightColor: 0xd946ef
+    },
+    labyrinth: {
+      bg: 0x140702,
+      gridCenter: 0xff6600,
+      gridLines: 0x3d1402,
+      wallColor: 0xff3300,
+      headColor: 0xfbbf24,
+      bodyColor: 0xd97706,
+      lightColor: 0xff7700
+    },
+    hyper: {
+      bg: 0x020d1a,
+      gridCenter: 0x00e5ff,
+      gridLines: 0x052e4f,
+      wallColor: 0xff0077,
+      headColor: 0x00e5ff,
+      bodyColor: 0x0284c7,
+      lightColor: 0x00e5ff
+    }
+  };
 
   // Pre-allocated Shared Geometries & Materials (Memory Leak Prevention)
   const bodyGeo = new THREE.BoxGeometry(0.85, 0.75, 0.85);
@@ -129,6 +184,15 @@
   const eyeGeo = new THREE.SphereGeometry(0.12, 10, 10);
   const pupilGeo = new THREE.SphereGeometry(0.06, 8, 8);
   const particleGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+  const obstacleGeo = new THREE.BoxGeometry(0.88, 1.2, 0.88);
+
+  const obstacleMat = new THREE.MeshStandardMaterial({
+    color: 0x14121e,
+    emissive: 0xff3300,
+    emissiveIntensity: 0.55,
+    roughness: 0.15,
+    metalness: 0.85
+  });
 
   const headMat = new THREE.MeshStandardMaterial({
     color: 0x00ff88,
@@ -181,8 +245,21 @@
   const particleMatCache = {
     golden: new THREE.MeshBasicMaterial({ color: 0xffd700 }),
     freeze: new THREE.MeshBasicMaterial({ color: 0x00bfff }),
-    normal: new THREE.MeshBasicMaterial({ color: 0xff2d55 })
+    normal: new THREE.MeshBasicMaterial({ color: 0xff2d55 }),
+    warp: new THREE.MeshBasicMaterial({ color: 0xbf55ec })
   };
+
+  // Flag all shared singletons to prevent accidental GPU disposal
+  [
+    bodyGeo, headGeo, eyeGeo, pupilGeo, particleGeo, obstacleGeo,
+    appleGeo, goldenGeo, freezeGeo
+  ].forEach(g => { g.userData = g.userData || {}; g.userData.isShared = true; });
+
+  [
+    obstacleMat, headMat, bodyMat, eyeWhiteMat, pupilMat,
+    appleMat, goldenMat, freezeMat,
+    particleMatCache.golden, particleMatCache.freeze, particleMatCache.normal, particleMatCache.warp
+  ].forEach(m => { m.userData = m.userData || {}; m.userData.isShared = true; });
 
   function initThree() {
     const width = container.clientWidth || 400;
@@ -239,12 +316,35 @@
     }
   }
 
-  function createArena() {
-    const arenaGroup = new THREE.Group();
+  function applyModeTheme(mode) {
+    const t = THEMES[mode] || THEMES.classic;
+    if (scene) {
+      scene.background.setHex(t.bg);
+      if (scene.fog) scene.fog.color.setHex(t.bg);
+    }
+    if (snakeHeadLight) {
+      snakeHeadLight.color.setHex(t.lightColor);
+    }
+    headMat.color.setHex(t.headColor);
+    headMat.emissive.setHex(t.headColor);
+    bodyMat.color.setHex(t.bodyColor);
+    createArena(mode);
+  }
+
+  function createArena(mode = currentMode) {
+    if (arenaGroup) {
+      scene.remove(arenaGroup);
+      arenaGroup.traverse(child => {
+        if (child.isMesh || child.isLineSegments) disposeMesh(child);
+      });
+    }
+
+    arenaGroup = new THREE.Group();
+    const t = THEMES[mode] || THEMES.classic;
 
     const floorGeo = new THREE.BoxGeometry(GRID_SIZE * CELL_SIZE, 0.4, GRID_SIZE * CELL_SIZE);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x0a0e24,
+      color: t.bg,
       roughness: 0.6,
       metalness: 0.3
     });
@@ -253,35 +353,61 @@
     floorMesh.receiveShadow = true;
     arenaGroup.add(floorMesh);
 
-    const gridHelper = new THREE.GridHelper(GRID_SIZE * CELL_SIZE, GRID_SIZE, 0x00ffaa, 0x142044);
+    const gridHelper = new THREE.GridHelper(GRID_SIZE * CELL_SIZE, GRID_SIZE, t.gridCenter, t.gridLines);
     gridHelper.position.y = 0.01;
     arenaGroup.add(gridHelper);
 
-    const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x00ffff,
-      emissive: 0x00ffff,
-      emissiveIntensity: 0.3,
-      roughness: 0.2
-    });
     const wallThick = 0.3;
     const wallHeight = 0.6;
     const size = GRID_SIZE * CELL_SIZE;
 
-    const northWall = new THREE.Mesh(new THREE.BoxGeometry(size + wallThick * 2, wallHeight, wallThick), wallMat);
-    northWall.position.set(0, wallHeight / 2, -size / 2 - wallThick / 2);
-    arenaGroup.add(northWall);
+    if (mode === 'portal') {
+      // Portal beacons at the 4 corners
+      const portalBeaconMat = new THREE.MeshStandardMaterial({
+        color: t.wallColor,
+        emissive: t.wallColor,
+        emissiveIntensity: 0.65,
+        transparent: true,
+        opacity: 0.6,
+        roughness: 0.1
+      });
+      const bSize = 1.4;
+      const bGeo = new THREE.BoxGeometry(bSize, wallHeight * 1.8, bSize);
+      const corners = [
+        [-size / 2, -size / 2],
+        [size / 2, -size / 2],
+        [-size / 2, size / 2],
+        [size / 2, size / 2]
+      ];
+      corners.forEach(([cx, cz]) => {
+        const beacon = new THREE.Mesh(bGeo, portalBeaconMat);
+        beacon.position.set(cx, (wallHeight * 1.8) / 2, cz);
+        arenaGroup.add(beacon);
+      });
+    } else {
+      const wallMat = new THREE.MeshStandardMaterial({
+        color: t.wallColor,
+        emissive: t.wallColor,
+        emissiveIntensity: 0.35,
+        roughness: 0.2
+      });
 
-    const southWall = new THREE.Mesh(new THREE.BoxGeometry(size + wallThick * 2, wallHeight, wallThick), wallMat);
-    southWall.position.set(0, wallHeight / 2, size / 2 + wallThick / 2);
-    arenaGroup.add(southWall);
+      const northWall = new THREE.Mesh(new THREE.BoxGeometry(size + wallThick * 2, wallHeight, wallThick), wallMat);
+      northWall.position.set(0, wallHeight / 2, -size / 2 - wallThick / 2);
+      arenaGroup.add(northWall);
 
-    const westWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallHeight, size), wallMat);
-    westWall.position.set(-size / 2 - wallThick / 2, wallHeight / 2, 0);
-    arenaGroup.add(westWall);
+      const southWall = new THREE.Mesh(new THREE.BoxGeometry(size + wallThick * 2, wallHeight, wallThick), wallMat);
+      southWall.position.set(0, wallHeight / 2, size / 2 + wallThick / 2);
+      arenaGroup.add(southWall);
 
-    const eastWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallHeight, size), wallMat);
-    eastWall.position.set(size / 2 + wallThick / 2, wallHeight / 2, 0);
-    arenaGroup.add(eastWall);
+      const westWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallHeight, size), wallMat);
+      westWall.position.set(-size / 2 - wallThick / 2, wallHeight / 2, 0);
+      arenaGroup.add(westWall);
+
+      const eastWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallHeight, size), wallMat);
+      eastWall.position.set(size / 2 + wallThick / 2, wallHeight / 2, 0);
+      arenaGroup.add(eastWall);
+    }
 
     scene.add(arenaGroup);
   }
@@ -450,14 +576,38 @@
   };
   let currentDifficulty = 'normal';
 
+  function setMode(mode) {
+    if (!SnakeEngine.MODES[mode.toUpperCase()]) return;
+    currentMode = mode;
+    if (currentModeLabel) {
+      currentModeLabel.textContent = SnakeEngine.MODE_CONFIGS[mode].name.split(' ')[0];
+    }
+    modeCards.forEach(card => {
+      card.classList.toggle('active', card.dataset.mode === mode);
+    });
+    applyModeTheme(mode);
+    initGame();
+  }
+
+  function toggleModeModal(open) {
+    if (!modeModal) return;
+    const shouldOpen = open !== undefined ? open : modeModal.hidden;
+    modeModal.hidden = !shouldOpen;
+    if (shouldOpen && isGameStarted && gameState && !gameState.isPaused && !gameState.isGameOver) {
+      togglePause();
+    }
+  }
+
   function initGame() {
     isGameStarted = false;
-    const savedHighScore = parseInt(localStorage.getItem('snake_3d_high_score') || '0', 10);
+    const modeKey = 'snake_3d_high_score_' + currentMode;
+    const savedHighScore = parseInt(localStorage.getItem(modeKey) || '0', 10);
     highScoreVal.textContent = savedHighScore;
 
     gameState = SnakeEngine.createGameState({
       width: GRID_SIZE,
       height: GRID_SIZE,
+      mode: currentMode,
       highScore: savedHighScore,
       difficulty: currentDifficulty,
       baseSpeed: SPEEDS[currentDifficulty]
@@ -469,12 +619,36 @@
     if (foodMesh) { scene.remove(foodMesh); foodMesh = null; }
     particles.forEach(p => scene.remove(p.mesh));
     particles = [];
+    obstacleMeshes.forEach(m => { scene.remove(m); disposeMesh(m); });
+    obstacleMeshes = [];
+
+    // Create obstacle meshes if labyrinth mode
+    if (gameState.obstacles && gameState.obstacles.length > 0) {
+      gameState.obstacles.forEach(obs => {
+        const mesh = new THREE.Mesh(obstacleGeo, obstacleMat);
+        const wPos = gridToWorld(obs.x, obs.y);
+        mesh.position.set(wPos.x, 0.6, wPos.z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+        obstacleMeshes.push(mesh);
+      });
+    }
+
+    // Refresh best scores in mode cards
+    ['classic', 'portal', 'labyrinth', 'hyper'].forEach(m => {
+      const el = document.getElementById('best' + m.charAt(0).toUpperCase() + m.slice(1));
+      if (el) {
+        el.textContent = localStorage.getItem('snake_3d_high_score_' + m) || '0';
+      }
+    });
 
     updateScoreDisplay();
     updateSnake3D(gameState.snake, gameState.direction);
     spawnFood3D(gameState.food);
 
     gameOverModal.hidden = true;
+    if (modeModal) modeModal.hidden = true;
     pauseOverlay.hidden = true;
     freezeIndicator.hidden = true;
     startOverlay.hidden = false;
@@ -497,15 +671,22 @@
     highScoreVal.textContent = gameState.highScore;
   }
 
-  function triggerGameOver() {
-    SoundFX.crash();
+  function triggerGameOver(reason) {
+    if (reason === 'obstacle_collision') {
+      SoundFX.hazardCrash();
+    } else {
+      SoundFX.crash();
+    }
     gameOverModal.hidden = false;
     finalScoreEl.textContent = gameState.score;
 
-    const previousBest = parseInt(localStorage.getItem('snake_3d_high_score') || '0', 10);
+    const modeKey = 'snake_3d_high_score_' + currentMode;
+    const previousBest = parseInt(localStorage.getItem(modeKey) || '0', 10);
     if (gameState.score > previousBest && gameState.score > 0) {
       newBestTag.hidden = false;
-      localStorage.setItem('snake_3d_high_score', gameState.score);
+      localStorage.setItem(modeKey, gameState.score);
+      const el = document.getElementById('best' + currentMode.charAt(0).toUpperCase() + currentMode.slice(1));
+      if (el) el.textContent = gameState.score;
     } else {
       newBestTag.hidden = true;
     }
@@ -539,9 +720,15 @@
         const tickResult = SnakeEngine.tick(gameState, now);
 
         if (tickResult.gameOver) {
-          triggerGameOver();
+          triggerGameOver(tickResult.reason);
         } else if (tickResult.moved) {
           updateSnake3D(gameState.snake, gameState.direction);
+
+          if (tickResult.didWarp) {
+            SoundFX.warp();
+            const headPos = gridToWorld(gameState.snake[0].x, gameState.snake[0].y);
+            create3DParticles(headPos.x, headPos.z, 'warp', 16);
+          }
 
           if (tickResult.ateFood) {
             updateScoreDisplay();
@@ -645,6 +832,33 @@
       togglePause();
     });
 
+    if (modeBtn) {
+      modeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleModeModal();
+      });
+    }
+
+    if (closeModeModalBtn) {
+      closeModeModalBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleModeModal(false);
+        startGame();
+      });
+    }
+
+    modeCards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        e.preventDefault();
+        const mode = card.dataset.mode;
+        if (mode) {
+          setMode(mode);
+          toggleModeModal(false);
+          startGame();
+        }
+      });
+    });
+
     cameraBtn.addEventListener('click', (e) => {
       e.preventDefault();
       setCameraView(cameraMode === 'isometric' ? 'follow' : 'isometric');
@@ -699,6 +913,10 @@
         case 'p':
         case 'P':
           togglePause();
+          break;
+        case 'l':
+        case 'L':
+          toggleModeModal();
           break;
         case 'r':
         case 'R':
