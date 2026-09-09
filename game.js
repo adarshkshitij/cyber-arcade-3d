@@ -495,11 +495,11 @@
     const rightRailMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
 
     const leftRail = new THREE.Mesh(railGeo, leftRailMat);
-    leftRail.position.set(-5.3, 0.2, 80);
+    leftRail.position.set(5.3, 0.2, 80); // Screen Left (Cyan)
     highwayGroup.add(leftRail);
 
     const rightRail = new THREE.Mesh(railGeo, rightRailMat);
-    rightRail.position.set(5.3, 0.2, 80);
+    rightRail.position.set(-5.3, 0.2, 80); // Screen Right (Magenta)
     highwayGroup.add(rightRail);
 
     // Scrolling lane dashed stripes
@@ -524,12 +524,12 @@
 
     for (let z = -10; z < 180; z += 24) {
       const pLeft = new THREE.Mesh(pillarGeo, pillarMatLeft);
-      pLeft.position.set(-6.5, 2.5, z);
+      pLeft.position.set(6.5, 2.5, z); // Screen Left (Cyan)
       highwayGroup.add(pLeft);
       roadPillarMeshes.push(pLeft);
 
       const pRight = new THREE.Mesh(pillarGeo, pillarMatRight);
-      pRight.position.set(6.5, 2.5, z);
+      pRight.position.set(-6.5, 2.5, z); // Screen Right (Magenta)
       highwayGroup.add(pRight);
       roadPillarMeshes.push(pRight);
     }
@@ -688,7 +688,7 @@
         trafficCarMeshes.set(car.id, mesh);
       }
       mesh.visible = (activeGame === 'racer');
-      mesh.position.set(car.lane * 3.2, 0, car.z);
+      mesh.position.set(-car.lane * 3.2, 0, car.z);
     });
     for (const [id, mesh] of trafficCarMeshes) {
       if (!seenIds.has(id)) {
@@ -709,7 +709,7 @@
         nitroPickupMeshes.set(p.id, mesh);
       }
       mesh.visible = (activeGame === 'racer');
-      mesh.position.set(p.lane * 3.2, 0.7 + Math.sin(performance.now() * 0.006 + p.id) * 0.15, p.z);
+      mesh.position.set(-p.lane * 3.2, 0.7 + Math.sin(performance.now() * 0.006 + p.id) * 0.15, p.z);
       mesh.rotation.y += 0.04;
     });
     for (const [id, mesh] of nitroPickupMeshes) {
@@ -793,12 +793,12 @@
       if (pillar.position.z < -10) pillar.position.z += 190;
     });
 
-    const targetX = racerState.laneOffset * 3.2;
+    const targetX = -racerState.laneOffset * 3.2;
     playerCarGroup.position.x = targetX;
 
     const steerAngle = (racerState.targetLane - racerState.laneOffset);
     playerCarGroup.rotation.z = -steerAngle * 0.16;
-    playerCarGroup.rotation.y = steerAngle * 0.08;
+    playerCarGroup.rotation.y = -steerAngle * 0.10;
 
     if (playerCarGroup.userData.headlightSpots) {
       const boostIntensity = racerState.isBoosting ? 4.2 : 2.4;
@@ -1718,6 +1718,50 @@
       btn.addEventListener('pointerleave', pointerUpHandler);
     });
 
+    // Touch Swipe Gesture support on canvas for mobile / tablet
+    let touchStartX = 0;
+    let touchStartY = 0;
+    container.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    container.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1 && activeGame === 'racer') {
+        const diffX = e.touches[0].clientX - touchStartX;
+        if (diffX < -25) {
+          activeKeys.add('ArrowLeft');
+          activeKeys.delete('ArrowRight');
+        } else if (diffX > 25) {
+          activeKeys.add('ArrowRight');
+          activeKeys.delete('ArrowLeft');
+        } else {
+          activeKeys.delete('ArrowLeft');
+          activeKeys.delete('ArrowRight');
+        }
+      }
+    }, { passive: true });
+
+    container.addEventListener('touchend', (e) => {
+      activeKeys.delete('ArrowLeft');
+      activeKeys.delete('ArrowRight');
+      if (e.changedTouches.length === 1) {
+        const diffX = e.changedTouches[0].clientX - touchStartX;
+        const diffY = e.changedTouches[0].clientY - touchStartY;
+        const absX = Math.abs(diffX);
+        const absY = Math.abs(diffY);
+        if (Math.max(absX, absY) > 25) {
+          if (absX > absY) {
+            handleDirectionInput(diffX < 0 ? 'left' : 'right');
+          } else {
+            handleDirectionInput(diffY < 0 ? 'up' : 'down');
+          }
+        }
+      }
+    }, { passive: true });
+
     window.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
         e.preventDefault();
@@ -1755,7 +1799,10 @@
           handleDirectionInput('right');
           break;
         case ' ':
-          if (activeGame === 'racer') {
+        case 'Enter':
+          if ((racerState && racerState.isGameOver) || (gameState && gameState.isGameOver)) {
+            restartBtn.click();
+          } else if (activeGame === 'racer') {
             triggerBoost();
           } else {
             togglePause();
