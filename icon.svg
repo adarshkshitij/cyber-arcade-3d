@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#0a0f24" />
+      <stop offset="100%" stop-color="#03050c" />
+    </radialGradient>
+    <linearGradient id="neonCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00ffaa" />
+      <stop offset="100%" stop-color="#00e5ff" />
+    </linearGradient>
+    <linearGradient id="neonPink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff2d95" />
+      <stop offset="100%" stop-color="#ff0055" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Outer Rounded Cabinet Frame -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bgGlow)" stroke="#00e5ff" stroke-width="8" />
+  
+  <!-- Retro Grid Horizon Lines -->
+  <path d="M48 380 L464 380 M80 410 L432 410 M120 440 L392 440" stroke="rgba(255,45,149,0.3)" stroke-width="4" />
+  <path d="M256 320 L64 480 M256 320 L160 480 M256 320 L256 480 M256 320 L352 480 M256 320 L448 480" stroke="rgba(0,229,255,0.25)" stroke-width="3" />
+  
+  <!-- Neon Snake Glyph -->
+  <path d="M120 180 Q160 120 220 160 T320 140 T400 200" fill="none" stroke="url(#neonCyan)" stroke-width="28" stroke-linecap="round" filter="url(#glow)" />
+  <circle cx="400" cy="200" r="22" fill="#00ffaa" filter="url(#glow)" />
+  <circle cx="410" cy="195" r="5" fill="#05010a" />
+
+  <!-- Cyber Racer Car Silhouette -->
+  <path d="M180 320 L220 260 L292 260 L332 320 L348 340 L164 340 Z" fill="url(#neonPink)" filter="url(#glow)" />
+  <rect x="200" y="270" width="112" height="30" rx="6" fill="#050d1a" />
+  <circle cx="192" cy="342" r="14" fill="#00e5ff" />
+  <circle cx="320" cy="342" r="14" fill="#00e5ff" />
+</svg>
