@@ -774,11 +774,30 @@
     camera.position.z = -8.5;
     camera.lookAt(targetX * 0.6, 1.2, 16);
 
+    if (gameContainer) {
+      gameContainer.classList.toggle('boost-active', !!racerState.isBoosting);
+    }
+
     if (racerState.isBoosting && Math.random() < 0.6) {
       create3DParticles(targetX + (Math.random() - 0.5) * 0.6, -1.6, 'freeze', 2);
     }
 
     if (isGameStarted && !racerState.isPaused && !racerState.isGameOver) {
+      const isSteeringLeft = activeKeys.has('ArrowLeft') || activeKeys.has('a') || activeKeys.has('A');
+      const isSteeringRight = activeKeys.has('ArrowRight') || activeKeys.has('d') || activeKeys.has('D');
+
+      if (isSteeringLeft && !isSteeringRight) {
+        if (typeof RacerEngine.steerContinuous === 'function') {
+          RacerEngine.steerContinuous(racerState, 'left', delta);
+        }
+      } else if (isSteeringRight && !isSteeringLeft) {
+        if (typeof RacerEngine.steerContinuous === 'function') {
+          RacerEngine.steerContinuous(racerState, 'right', delta);
+        }
+      } else if (typeof RacerEngine.stabilizeSteering === 'function') {
+        RacerEngine.stabilizeSteering(racerState, delta);
+      }
+
       const result = RacerEngine.tick(racerState, delta * 1000);
 
       scoreVal.textContent = racerState.score;
@@ -1064,6 +1083,7 @@
   let lastTickTime = 0;
   let animationFrameId = null;
   let lastFrameTime = performance.now();
+  const activeKeys = new Set();
 
   const SPEEDS = {
     easy: 150,
@@ -1450,24 +1470,45 @@
       }
     });
 
+    const keyMapping = {
+      up: 'ArrowUp',
+      down: 'ArrowDown',
+      left: 'ArrowLeft',
+      right: 'ArrowRight'
+    };
+
     dpadButtons.forEach(btn => {
       const dir = btn.dataset.dir;
       if (!dir) return;
 
-      const trigger = (e) => {
+      const pointerDownHandler = (e) => {
         e.preventDefault();
         btn.classList.add('pressed');
+        if (keyMapping[dir]) {
+          activeKeys.add(keyMapping[dir]);
+        }
         handleDirectionInput(dir);
-        setTimeout(() => btn.classList.remove('pressed'), 120);
       };
 
-      btn.addEventListener('pointerdown', trigger);
+      const pointerUpHandler = (e) => {
+        e.preventDefault();
+        btn.classList.remove('pressed');
+        if (keyMapping[dir]) {
+          activeKeys.delete(keyMapping[dir]);
+        }
+      };
+
+      btn.addEventListener('pointerdown', pointerDownHandler);
+      btn.addEventListener('pointerup', pointerUpHandler);
+      btn.addEventListener('pointercancel', pointerUpHandler);
+      btn.addEventListener('pointerleave', pointerUpHandler);
     });
 
     window.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
         e.preventDefault();
       }
+      activeKeys.add(e.key);
 
       switch (e.key) {
         case 'ArrowUp':
@@ -1500,6 +1541,12 @@
           handleDirectionInput('right');
           break;
         case ' ':
+          if (activeGame === 'racer') {
+            triggerBoost();
+          } else {
+            togglePause();
+          }
+          break;
         case 'p':
         case 'P':
           togglePause();
@@ -1535,6 +1582,14 @@
           }
           break;
       }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      activeKeys.delete(e.key);
+    });
+
+    window.addEventListener('blur', () => {
+      activeKeys.clear();
     });
   }
 

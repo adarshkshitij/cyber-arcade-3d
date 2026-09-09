@@ -63,6 +63,27 @@
     return state.targetLane;
   }
 
+  function steerContinuous(state, direction, dt = 0.016) {
+    if (state.isGameOver || state.isPaused) return state.targetLane;
+
+    const lateralRate = 4.0; // lanes per second for smooth analog drift
+    if (direction === 'left') {
+      state.targetLane = Math.max(-1.15, state.targetLane - lateralRate * dt);
+    } else if (direction === 'right') {
+      state.targetLane = Math.min(1.15, state.targetLane + lateralRate * dt);
+    }
+    return state.targetLane;
+  }
+
+  function stabilizeSteering(state, dt = 0.016) {
+    if (state.isGameOver || state.isPaused) return state.targetLane;
+    // When no keys held, gently center towards the nearest discrete lane [-1, 0, 1]
+    const targetDiscrete = Math.round(Math.max(-1, Math.min(1, state.targetLane)));
+    state.targetLane += (targetDiscrete - state.targetLane) * Math.min(1.0, 6.0 * dt);
+    return state.targetLane;
+  }
+
+
   function activateBoost(state) {
     if (state.isGameOver || state.isPaused || state.nitro < 20 || state.isBoosting) {
       return false;
@@ -138,7 +159,7 @@
       events.push({ type: 'newHighScore', score: state.score });
     }
 
-    const steerSpeed = 8.0;
+    const steerSpeed = 16.0;
     state.laneOffset += (state.targetLane - state.laneOffset) * Math.min(1.0, steerSpeed * dt);
     state.lane = Math.round(state.laneOffset);
 
@@ -212,6 +233,8 @@
     DIFFICULTY_SETTINGS,
     createRacerState,
     steer,
+    steerContinuous,
+    stabilizeSteering,
     activateBoost,
     tick,
     resetRacer

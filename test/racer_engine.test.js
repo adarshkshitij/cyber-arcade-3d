@@ -116,3 +116,31 @@ test('Racer Engine: resetRacer retains highScore and resets gameplay metrics', (
   assert.strictEqual(newState.highScore, 850, 'High score must be retained');
   assert.strictEqual(newState.isGameOver, false);
 });
+
+test('Racer Engine: steerContinuous moves targetLane smoothly and clamps within road shoulders', () => {
+  const state = RacerEngine.createRacerState();
+  assert.strictEqual(state.targetLane, 0);
+
+  // Steer left continuously for 100ms
+  RacerEngine.steerContinuous(state, 'left', 0.1);
+  assert.ok(state.targetLane < 0, 'Target lane should steer left');
+  assert.ok(state.targetLane >= -1.15, 'Target lane should not exceed left boundary');
+
+  // Steer left for long duration, must clamp at -1.15
+  RacerEngine.steerContinuous(state, 'left', 2.0);
+  assert.strictEqual(state.targetLane, -1.15, 'Target lane should clamp at -1.15');
+
+  // Steer right for long duration, must clamp at +1.15
+  RacerEngine.steerContinuous(state, 'right', 4.0);
+  assert.strictEqual(state.targetLane, 1.15, 'Target lane should clamp at +1.15');
+});
+
+test('Racer Engine: stabilizeSteering gently pulls targetLane back to nearest discrete lane', () => {
+  const state = RacerEngine.createRacerState();
+  state.targetLane = -0.85; // closer to -1 than 0
+
+  RacerEngine.stabilizeSteering(state, 0.5);
+  assert.ok(state.targetLane < -0.85, 'Stabilization should attract targetLane towards -1');
+  assert.ok(state.targetLane >= -1.0, 'Stabilization should settle near -1');
+});
+

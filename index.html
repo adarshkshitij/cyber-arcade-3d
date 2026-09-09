@@ -83,7 +83,10 @@
     <!-- 3D Game Viewport Container -->
     <div class="game-container" id="gameContainer">
       <div id="webglContainer"></div>
-      
+
+      <!-- Pure-CSS boost FX: activated by toggling .boost-active on #gameContainer -->
+      <div class="speed-lines-overlay" id="speedLinesOverlay" aria-hidden="true"></div>
+
       <!-- Start Game Tap Prompt -->
       <div class="start-overlay" id="startOverlay">
         <div class="start-card">
@@ -103,11 +106,16 @@
     </div>
 
     <!-- Desktop Keyboard HUD Legend -->
+    <!-- Snake-only pills (#pillSteerSnake, #pillModes, #pillCamera) vs Racer-only
+         pills (#pillSteerRacer, #pillNitro) are swapped purely in CSS via the
+         :has(#tabRacer.active) selector below - no JS wiring needed here. -->
     <div class="desktop-controls-bar" id="desktopControlsBar" aria-label="Desktop Controls Guide">
-      <span class="key-pill"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Steer</span>
+      <span class="key-pill" id="pillSteerSnake"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Steer</span>
+      <span class="key-pill" id="pillSteerRacer"><kbd>A</kbd><kbd>D</kbd> / <kbd>←</kbd><kbd>→</kbd> Steer</span>
+      <span class="key-pill" id="pillNitro"><kbd>W</kbd>/<kbd>↑</kbd>/<kbd>Shift</kbd> Nitro Boost</span>
       <span class="key-pill"><kbd>Space</kbd> Pause</span>
-      <span class="key-pill"><kbd>L</kbd> Modes</span>
-      <span class="key-pill"><kbd>C</kbd> Camera</span>
+      <span class="key-pill" id="pillModes"><kbd>L</kbd> Modes</span>
+      <span class="key-pill" id="pillCamera"><kbd>C</kbd> Camera</span>
       <span class="key-pill"><kbd>F</kbd> Fullscreen</span>
       <span class="key-pill"><kbd>M</kbd> Mute</span>
       <button id="toggleDpadBtn" class="key-pill toggle-dpad-btn" type="button" title="Toggle Touch D-Pad">📱 Touch Pad</button>
