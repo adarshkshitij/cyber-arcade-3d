@@ -7,12 +7,13 @@
 ## 📑 Table of Contents
 1. [Can I Host This on AWS? (Architecture Overview)](#1-can-i-host-this-on-aws-architecture-overview)
 2. [Hosting Strategy Comparison & Pricing](#2-hosting-strategy-comparison--pricing)
-3. [Method 1: AWS S3 + CloudFront (Recommended - $0/mo Free Tier)](#3-method-1-aws-s3--cloudfront-recommended---0mo-free-tier)
-4. [Method 2: Docker on AWS App Runner / ECS](#4-method-2-docker-on-aws-app-runner--ecs)
-5. [Method 3: 1-Click Terraform IaC Provisioning](#5-method-3-1-click-terraform-iac-provisioning)
-6. [AWS CLI Setup & Command Reference](#6-aws-cli-setup--command-reference)
-7. [CodeRabbit CLI & CI Integration](#7-coderabbit-cli--ci-integration)
-8. [Automated GitHub Actions CI/CD Deployment](#8-automated-github-actions-cicd-deployment)
+3. [AWS Free Tier Quotas & $0 Cost Guarantee](#3-aws-free-tier-quotas--0-cost-guarantee)
+4. [Method 1: AWS S3 + CloudFront (Recommended - $0/mo Free Tier)](#4-method-1-aws-s3--cloudfront-recommended---0mo-free-tier)
+5. [Method 2: Docker on AWS App Runner / ECS](#5-method-2-docker-on-aws-app-runner--ecs)
+6. [Method 3: 1-Click Terraform IaC Provisioning](#6-method-3-1-click-terraform-iac-provisioning)
+7. [AWS CLI Setup & Command Reference](#7-aws-cli-setup--command-reference)
+8. [CodeRabbit CLI & CI Integration](#8-coderabbit-cli--ci-integration)
+9. [Automated GitHub Actions CI/CD Deployment](#9-automated-github-actions-cicd-deployment)
 
 ---
 
@@ -56,7 +57,33 @@ Because **3D Neon Snake Arcade** is built using vanilla WebGL/Three.js and pure 
 
 ---
 
-## 3. Method 1: AWS S3 + CloudFront (Recommended - $0/mo Free Tier)
+## 3. AWS Free Tier Quotas & $0 Cost Guarantee
+
+### Service Quota Breakdown:
+| AWS Service | Free Tier Category | Monthly Allocation | Game Usage | Cost |
+| :--- | :--- | :--- | :--- | :--- |
+| **Amazon CloudFront** | **Always Free** (Forever) | **1 TB (1,000 GB)** Data Transfer Out<br/>**10,000,000** HTTP/HTTPS Requests | ~200 MB / mo<br/>~15,000 requests | **$0.00** |
+| **Amazon S3** | **12 Months Free** | **5 GB** Standard Storage<br/>**20,000** GETs & **2,000** PUTs | ~1.5 MB total size<br/>~5 PUTs per release | **$0.00** |
+| **AWS Certificate Manager (ACM)** | **Always Free** (Forever) | Unlimited public SSL/TLS Certificates | 1 SSL Certificate | **$0.00** |
+| **GitHub Actions** | **Free Forever** | Unlimited runner minutes for public repos | ~10 mins / week | **$0.00** |
+| **CodeRabbit AI** | **Free for Open Source** | Unlimited automated PR code reviews | On every Pull Request | **$0.00** |
+
+### ⚠️ How to Avoid Unintended AWS Charges:
+1. **Do NOT use AWS Route 53 ($0.50/month)**:
+   - AWS Route 53 charges $0.50/month per hosted zone and is **NOT** included in the Free Tier.
+   - **Solution**: Use the default free CloudFront HTTPS domain (`https://d1234abcd.cloudfront.net`), or use **Cloudflare DNS (100% Free)** if connecting a custom domain.
+2. **Setup AWS Zero-Cost Budget Guardrail ($0.01 threshold)**:
+   We have provided an automated script that configures an AWS Budget alarm:
+   ```bash
+   export ALERT_EMAIL="your-email@example.com"
+   npm run aws:budget
+   # or: bash devops/aws/setup-zero-cost-budget.sh
+   ```
+   If your AWS account ever accrues even **$0.01** of spending, AWS will immediately send you an email alert!
+
+---
+
+## 4. Method 1: AWS S3 + CloudFront (Recommended - $0/mo Free Tier)
 
 This repository includes a ready-to-run automation script: `devops/aws/deploy-s3-cloudfront.sh`.
 
@@ -82,7 +109,7 @@ npm run aws:deploy
 
 ---
 
-## 4. Method 2: Docker on AWS App Runner / ECS
+## 5. Method 2: Docker on AWS App Runner / ECS
 
 If your infrastructure team mandates Docker containers:
 
@@ -118,7 +145,7 @@ docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/snake-game-3d:v1.1.
 
 ---
 
-## 5. Method 3: 1-Click Terraform IaC Provisioning
+## 6. Method 3: 1-Click Terraform IaC Provisioning
 
 All AWS infrastructure can be spun up or destroyed with a single command using `devops/aws/main.tf`.
 
@@ -145,7 +172,7 @@ terraform destroy -var="bucket_name=my-snake-game-webgl-production" -auto-approv
 
 ---
 
-## 6. AWS CLI Setup & Command Reference
+## 7. AWS CLI Setup & Command Reference
 
 ### Installing AWS CLI on Linux:
 ```bash
@@ -174,7 +201,7 @@ aws configure
 
 ---
 
-## 7. CodeRabbit CLI & CI Integration
+## 8. CodeRabbit CLI & CI Integration
 
 CodeRabbit provides AI-driven code review, detecting performance bottlenecks, security flaws, and architectural regressions.
 
@@ -209,7 +236,7 @@ Every Pull Request will now automatically receive line-by-line AI code reviews!
 
 ---
 
-## 8. Automated GitHub Actions CI/CD Deployment
+## 9. Automated GitHub Actions CI/CD Deployment
 
 We have created `devops/workflows/deploy-aws.yml` ready for continuous deployment.
 
