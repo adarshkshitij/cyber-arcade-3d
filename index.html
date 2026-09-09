@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>3D Neon Snake Arcade</title>
+  <title>Cyber Arcade 3D: Neon Snake & Turbo Racer</title>
+  <meta name="theme-color" content="#05010a" />
+  <meta name="description" content="3D WebGL Cyberpunk Arcade: Neon Snake & Turbo Highway Racer with procedural synthwave audio" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
   <!-- Three.js WebGL 3D Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -205,5 +209,13 @@
   <script src="racer-engine.js"></script>
   <!-- 3D WebGL game loop and UI controller -->
   <script src="game.js"></script>
+  <!-- Service Worker registration for PWA offline play -->
+  <script>
+    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
