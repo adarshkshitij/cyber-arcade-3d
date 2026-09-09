@@ -9,6 +9,7 @@
 [![AWS S3 + CloudFront](https://img.shields.io/badge/AWS-S3%20%2B%20CloudFront%20Ready-FF9900.svg?logo=amazon-aws)](AWS_DEPLOYMENT_GUIDE.md)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg?logo=docker)](Dockerfile)
 [![CodeRabbit Review](https://img.shields.io/badge/CodeRabbit-AI%20Reviewed-ffd700.svg)](CODERABBIT_REVIEW.md)
+[![SonarCloud Quality Gate](https://img.shields.io/badge/SonarCloud-Quality%20Gate%20A-4E9BCD.svg?logo=sonarcloud&logoColor=white)](sonar-project.properties)
 [![Tests Passing](https://img.shields.io/badge/Tests-33%2F33%20Passing-00ffaa.svg)](test/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ffaa.svg)](LICENSE)
 

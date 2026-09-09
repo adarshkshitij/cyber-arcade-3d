@@ -1,8 +1,11 @@
-# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# ==============================================================================
+# 🐇 CodeRabbit AI Configuration (.coderabbit.yaml)
+# Production static architecture, security & code review guidelines
+# ==============================================================================
 version: "2"
 language: "en-US"
-tone_instructions: "Provide concise, actionable engineering feedback with specific code recommendations."
-early_access: false
+tone_instructions: "Act as a Senior Principal Graphics & Web Performance Engineer. Be concise, actionable, and focus on memory leaks, deterministic physics state machines, and WebGL resource lifecycles."
+
 reviews:
   profile: "chill"
   request_changes_workflow: false
@@ -15,10 +18,21 @@ reviews:
     drafts: false
     base_branches:
       - main
-      - master
   path_filters:
-    - "!vendor/**"
-    - "!**/*.min.js"
-    - "!**/*.png"
+    - "!node_modules/**"
+    - "!docs/**"
+    - "!*.png"
+    - "!*.jpg"
+    - "!*.svg"
+  path_instructions:
+    - path: "engine.js"
+      instructions: "Ensure pure deterministic logic with zero DOM access. Validate that collision mathematics and direction validation adhere to unit tests."
+    - path: "racer-engine.js"
+      instructions: "Check 60 FPS continuous steering math, obstacle bounds, and deterministic tick events."
+    - path: "game.js"
+      instructions: "Audit Three.js geometry/material disposal on restarts and game switches. Ensure no memory leaks or orphaned event listeners."
+    - path: "style.css"
+      instructions: "Audit responsive constraints, CSS container queries, and ensure strict [hidden] specificity."
+
 chat:
   auto_reply: true
