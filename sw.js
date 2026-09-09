@@ -40,22 +40,32 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        // Fallback to cache if network fails
-        return cachedResponse;
-      });
+  // Look up the cache once and share the promise between the response we
+  // serve and the network-failure fallback below.
+  const cachedResponsePromise = caches.match(event.request);
 
-      return cachedResponse || fetchPromise;
+  // Kick off revalidation immediately (before respondWith) and chain the
+  // cache.put() write into the same promise, so event.waitUntil() below can
+  // keep the worker alive until the cache update has actually completed -
+  // not just until the network response headers arrive.
+  const fetchPromise = fetch(event.request)
+    .then((networkResponse) => {
+      if (networkResponse && networkResponse.status === 200) {
+        const responseClone = networkResponse.clone();
+        return caches.open(CACHE_NAME)
+          .then((cache) => cache.put(event.request, responseClone))
+          .then(() => networkResponse);
+      }
+      return networkResponse;
     })
+    .catch(() => {
+      // Network failed: fall back to whatever was cached (may be undefined).
+      return cachedResponsePromise;
+    });
+
+  event.waitUntil(fetchPromise);
+
+  event.respondWith(
+    cachedResponsePromise.then((cachedResponse) => cachedResponse || fetchPromise)
   );
 });
