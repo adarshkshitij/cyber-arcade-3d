@@ -170,8 +170,8 @@
   let racerState = null;
   let highwayGroup = null;
   let playerCarGroup = null;
-  let trafficCarMeshes = [];
-  let nitroPickupMeshes = [];
+  let trafficCarMeshes = new Map(); // car.id -> mesh (stable identity across splices)
+  let nitroPickupMeshes = new Map(); // pickup.id -> mesh
   let roadStripeMeshes = [];
   let roadPillarMeshes = [];
 
@@ -556,14 +556,26 @@
     cabin.castShadow = true;
     playerCarGroup.add(cabin);
 
-    // Front headlights
+    // Front headlights - emissive bulb + a real SpotLight so they actually
+    // illuminate the road ahead, matching the snakeHeadLight glow pattern.
     const hlGeo = new THREE.BoxGeometry(0.3, 0.12, 0.1);
     const hlMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const headlightSpots = [];
     [-0.55, 0.55].forEach(x => {
       const hl = new THREE.Mesh(hlGeo, hlMat);
       hl.position.set(x, 0.38, 1.62);
       playerCarGroup.add(hl);
+
+      const spot = new THREE.SpotLight(0xbfe9ff, 2.4, 24, Math.PI / 7, 0.4, 1.4);
+      spot.position.set(x, 0.42, 1.7);
+      const target = new THREE.Object3D();
+      target.position.set(x * 0.3, -0.3, 14);
+      playerCarGroup.add(target);
+      spot.target = target;
+      playerCarGroup.add(spot);
+      headlightSpots.push(spot);
     });
+    playerCarGroup.userData.headlightSpots = headlightSpots;
 
     // Rear taillights
     const tlGeo = new THREE.BoxGeometry(0.35, 0.1, 0.1);
@@ -633,45 +645,48 @@
   }
 
   function syncTrafficMeshes(trafficList) {
-    while (trafficCarMeshes.length < trafficList.length) {
-      const carData = trafficList[trafficCarMeshes.length];
-      const mesh = buildTrafficCarMesh(carData ? carData.color : 0xff0055);
-      scene.add(mesh);
-      trafficCarMeshes.push(mesh);
-    }
-    while (trafficCarMeshes.length > trafficList.length) {
-      const mesh = trafficCarMeshes.pop();
-      scene.remove(mesh);
-    }
-
-    trafficList.forEach((car, i) => {
-      const mesh = trafficCarMeshes[i];
-      if (mesh) {
-        mesh.visible = (activeGame === 'racer');
-        mesh.position.set(car.lane * 3.2, 0, car.z);
+    // Keyed by car.id (not array index) so a mesh keeps representing the same
+    // car even when an earlier car is spliced out of racerState.traffic mid-array.
+    const seenIds = new Set();
+    trafficList.forEach(car => {
+      seenIds.add(car.id);
+      let mesh = trafficCarMeshes.get(car.id);
+      if (!mesh) {
+        mesh = buildTrafficCarMesh(car.color);
+        scene.add(mesh);
+        trafficCarMeshes.set(car.id, mesh);
       }
+      mesh.visible = (activeGame === 'racer');
+      mesh.position.set(car.lane * 3.2, 0, car.z);
     });
+    for (const [id, mesh] of trafficCarMeshes) {
+      if (!seenIds.has(id)) {
+        scene.remove(mesh);
+        trafficCarMeshes.delete(id);
+      }
+    }
   }
 
   function syncNitroMeshes(pickupsList) {
-    while (nitroPickupMeshes.length < pickupsList.length) {
-      const mesh = buildNitroPickupMesh();
-      scene.add(mesh);
-      nitroPickupMeshes.push(mesh);
-    }
-    while (nitroPickupMeshes.length > pickupsList.length) {
-      const mesh = nitroPickupMeshes.pop();
-      scene.remove(mesh);
-    }
-
-    pickupsList.forEach((p, i) => {
-      const mesh = nitroPickupMeshes[i];
-      if (mesh) {
-        mesh.visible = (activeGame === 'racer');
-        mesh.position.set(p.lane * 3.2, 0.7 + Math.sin(performance.now() * 0.006 + i) * 0.15, p.z);
-        mesh.rotation.y += 0.04;
+    const seenIds = new Set();
+    pickupsList.forEach(p => {
+      seenIds.add(p.id);
+      let mesh = nitroPickupMeshes.get(p.id);
+      if (!mesh) {
+        mesh = buildNitroPickupMesh();
+        scene.add(mesh);
+        nitroPickupMeshes.set(p.id, mesh);
       }
+      mesh.visible = (activeGame === 'racer');
+      mesh.position.set(p.lane * 3.2, 0.7 + Math.sin(performance.now() * 0.006 + p.id) * 0.15, p.z);
+      mesh.rotation.y += 0.04;
     });
+    for (const [id, mesh] of nitroPickupMeshes) {
+      if (!seenIds.has(id)) {
+        scene.remove(mesh);
+        nitroPickupMeshes.delete(id);
+      }
+    }
   }
 
   function initRacerGame() {
@@ -683,9 +698,9 @@
     });
 
     trafficCarMeshes.forEach(mesh => scene.remove(mesh));
-    trafficCarMeshes = [];
+    trafficCarMeshes.clear();
     nitroPickupMeshes.forEach(mesh => scene.remove(mesh));
-    nitroPickupMeshes = [];
+    nitroPickupMeshes.clear();
 
     isGameStarted = false;
     startOverlay.hidden = false;
@@ -748,6 +763,11 @@
     const steerAngle = (racerState.targetLane - racerState.laneOffset);
     playerCarGroup.rotation.z = -steerAngle * 0.16;
     playerCarGroup.rotation.y = steerAngle * 0.08;
+
+    if (playerCarGroup.userData.headlightSpots) {
+      const boostIntensity = racerState.isBoosting ? 4.2 : 2.4;
+      playerCarGroup.userData.headlightSpots.forEach(s => { s.intensity = boostIntensity; });
+    }
 
     camera.position.x += (targetX * 0.45 - camera.position.x) * 0.12;
     camera.position.y = racerState.isBoosting ? 3.9 : 4.3;
