@@ -67,6 +67,9 @@ test('E2E Headless Chrome DOM: WebGL canvas and UI controls are properly mounted
     assert.ok(dom.includes('id="pauseBtn"'), 'Pause button must be present');
     assert.ok(dom.includes('id="muteBtn"'), 'Mute button must be present');
     assert.ok(dom.includes('id="cameraBtn"'), 'Camera toggle button must be present');
+    assert.ok(dom.includes('id="trophyBtn"'), 'Trophy button must be present');
+    assert.ok(dom.includes('id="trophyModal"'), 'Trophy modal must be present in DOM');
+    assert.ok(dom.includes('id="toastContainer"'), 'Toast container must be present in DOM');
 
     // Difficulty buttons
     assert.ok(dom.includes('id="diffEasy"'), 'Easy button must be present');
@@ -86,6 +89,11 @@ test('E2E Headless Chrome DOM: WebGL canvas and UI controls are properly mounted
     assert.ok(dom.includes('data-mode="portal"'), 'Portal mode card must be present');
     assert.ok(dom.includes('data-mode="labyrinth"'), 'Labyrinth mode card must be present');
     assert.ok(dom.includes('data-mode="hyper"'), 'Hyper mode card must be present');
+
+    // Trophy Cabinet and Toasts
+    assert.ok(dom.includes('id="trophyBtn"'), 'Trophy button must be present in HUD');
+    assert.ok(dom.includes('id="trophyModal" class="modal-backdrop" hidden'), 'Trophy modal must be present and initially hidden');
+    assert.ok(dom.includes('id="toastContainer"'), 'Toast container must be present in DOM');
   } finally {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
   }

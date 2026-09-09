@@ -3,13 +3,14 @@
 // Stale-While-Revalidate caching for instant offline arcade gameplay
 // ==============================================================================
 
-const CACHE_NAME = 'cyber-arcade-3d-v1.2.0';
+const CACHE_NAME = 'cyber-arcade-3d-v1.3.0';
 const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
   './engine.js',
   './racer-engine.js',
+  './achievements.js',
   './game.js',
   './manifest.json',
   './icon.svg'
