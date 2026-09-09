@@ -19,6 +19,7 @@
   const container = document.getElementById('webglContainer');
   const scoreVal = document.getElementById('score');
   const highScoreVal = document.getElementById('highScore');
+  const startOverlay = document.getElementById('startOverlay');
   const freezeIndicator = document.getElementById('freezeIndicator');
   const pauseOverlay = document.getElementById('pauseOverlay');
   const gameOverModal = document.getElementById('gameOver');
@@ -245,7 +246,6 @@
     renderer.setSize(width, height);
   }
 
-  // Grid coordinate (0..19, 0..19) to 3D world space (X, Z)
   function gridToWorld(gx, gy) {
     const wx = (gx + 0.5) * CELL_SIZE - HALF_GRID;
     const wz = (gy + 0.5) * CELL_SIZE - HALF_GRID;
@@ -281,7 +281,6 @@
     mesh.position.y = 0.4;
 
     if (isHead) {
-      // 3D Eyes
       const eyeGeo = new THREE.SphereGeometry(0.12, 12, 12);
       const eyeWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
       const pupilGeo = new THREE.SphereGeometry(0.06, 8, 8);
@@ -307,12 +306,10 @@
   }
 
   function updateSnake3D(snakeArray, direction) {
-    // Add extra meshes if snake grew
     while (snakeMeshes.length < snakeArray.length) {
       const isHead = snakeMeshes.length === 0;
       snakeMeshes.push(createSnakeSegment(isHead));
     }
-    // Remove extra meshes if snake shrank
     while (snakeMeshes.length > snakeArray.length) {
       const oldMesh = snakeMeshes.pop();
       scene.remove(oldMesh);
@@ -325,7 +322,6 @@
       mesh.position.x = pos.x;
       mesh.position.z = pos.z;
 
-      // Orient head towards direction
       if (i === 0) {
         let angle = 0;
         if (direction.x === 1) angle = Math.PI / 2;
@@ -334,7 +330,6 @@
         else if (direction.y === -1) angle = 0;
         mesh.rotation.y = angle;
 
-        // Move head point light
         snakeHeadLight.position.set(pos.x, 1.2, pos.z);
       }
     }
@@ -367,7 +362,6 @@
         metalness: 0.3
       });
     } else {
-      // Normal Apple
       geo = new THREE.SphereGeometry(0.42, 16, 16);
       mat = new THREE.MeshStandardMaterial({
         color: 0xff2d55,
@@ -385,7 +379,6 @@
     scene.add(foodMesh);
   }
 
-  // 3D Particle Bursts
   function create3DParticles(x, z, colorHex, count = 20) {
     const pGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
     const pMat = new THREE.MeshBasicMaterial({ color: colorHex });
@@ -414,7 +407,7 @@
         particles.splice(i, 1);
         continue;
       }
-      p.velocity.y -= 9.8 * delta; // gravity
+      p.velocity.y -= 9.8 * delta;
       p.mesh.position.addScaledVector(p.velocity, delta);
       p.mesh.scale.setScalar(p.life);
       p.mesh.rotation.x += 0.1;
@@ -426,6 +419,7 @@
   // Game State & Loop
   // --------------------------------------------------------------------------
   let gameState = null;
+  let isGameStarted = false;
   let lastTickTime = 0;
   let animationFrameId = null;
   let lastFrameTime = performance.now();
@@ -438,6 +432,7 @@
   let currentDifficulty = 'normal';
 
   function initGame() {
+    isGameStarted = false;
     const savedHighScore = parseInt(localStorage.getItem('snake_3d_high_score') || '0', 10);
     highScoreVal.textContent = savedHighScore;
 
@@ -449,7 +444,7 @@
       baseSpeed: SPEEDS[currentDifficulty]
     });
 
-    // Reset 3D visuals
+    // Clear 3D visuals
     snakeMeshes.forEach(m => scene.remove(m));
     snakeMeshes = [];
     if (foodMesh) { scene.remove(foodMesh); foodMesh = null; }
@@ -460,12 +455,22 @@
     updateSnake3D(gameState.snake, gameState.direction);
     spawnFood3D(gameState.food);
 
+    // Hide modals and show start prompt
     gameOverModal.hidden = true;
     pauseOverlay.hidden = true;
     freezeIndicator.hidden = true;
+    startOverlay.hidden = false;
 
     lastTickTime = performance.now();
     lastFrameTime = performance.now();
+  }
+
+  function startGame() {
+    if (!isGameStarted) {
+      isGameStarted = true;
+      startOverlay.hidden = true;
+      lastTickTime = performance.now();
+    }
   }
 
   function updateScoreDisplay() {
@@ -493,7 +498,7 @@
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
 
-    // Rotate & bob 3D food
+    // Rotate & bob 3D food continuously (even on start screen!)
     if (foodMesh) {
       foodMesh.rotation.y += 2.0 * delta;
       foodMesh.rotation.x += 0.8 * delta;
@@ -503,7 +508,7 @@
     // Update 3D particles
     updateParticles(delta);
 
-    // Dynamic Camera Follow mode
+    // Camera follow mode
     if (cameraMode === 'follow' && gameState && gameState.snake.length > 0) {
       const head = gridToWorld(gameState.snake[0].x, gameState.snake[0].y);
       camera.position.x += (head.x - camera.position.x) * 0.05;
@@ -511,8 +516,8 @@
       camera.lookAt(head.x, 0, head.z);
     }
 
-    // Tick core engine if not paused or over
-    if (gameState && !gameState.isPaused && !gameState.isGameOver) {
+    // Only tick snake if game has been started by user input
+    if (isGameStarted && gameState && !gameState.isPaused && !gameState.isGameOver) {
       const elapsed = now - lastTickTime;
       if (elapsed >= gameState.currentSpeed) {
         lastTickTime = now;
@@ -543,7 +548,6 @@
           }
         }
 
-        // Toggle freeze indicator
         freezeIndicator.hidden = !gameState.activeEffect;
       }
     }
@@ -553,7 +557,7 @@
   }
 
   // --------------------------------------------------------------------------
-  // Complete Button Wiring & Interaction Handlers
+  // Controls & Button Handlers
   // --------------------------------------------------------------------------
   function setDifficulty(diff) {
     if (!SPEEDS[diff]) return;
@@ -571,7 +575,7 @@
   }
 
   function togglePause() {
-    if (!gameState || gameState.isGameOver) return;
+    if (!gameState || gameState.isGameOver || !isGameStarted) return;
     gameState.isPaused = !gameState.isPaused;
     pauseOverlay.hidden = !gameState.isPaused;
     pauseBtn.setAttribute('aria-pressed', String(gameState.isPaused));
@@ -581,6 +585,8 @@
 
   function handleDirectionInput(dirStr) {
     if (!gameState || gameState.isPaused || gameState.isGameOver) return;
+    startGame();
+
     const dirMap = {
       up: SnakeEngine.DIRECTIONS.UP,
       down: SnakeEngine.DIRECTIONS.DOWN,
@@ -593,6 +599,11 @@
   }
 
   function initControls() {
+    // Start Prompt click
+    startOverlay.addEventListener('click', () => {
+      startGame();
+    });
+
     // Difficulty Buttons
     diffButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -609,7 +620,6 @@
       muteBtn.querySelector('.icon-on').hidden = muted;
       muteBtn.querySelector('.icon-off').hidden = !muted;
     });
-    // Set initial mute UI
     const isMutedInitial = SoundFX.isMuted();
     muteBtn.setAttribute('aria-pressed', String(isMutedInitial));
     muteBtn.querySelector('.icon-on').hidden = isMutedInitial;
@@ -654,7 +664,6 @@
 
     // Desktop Keyboard Controls
     window.addEventListener('keydown', (e) => {
-      // Prevent scrolling on arrow keys or space
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
         e.preventDefault();
       }

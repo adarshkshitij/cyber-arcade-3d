@@ -12,7 +12,7 @@
   <div class="arcade-shell">
     <header class="game-header">
       <h1 class="title">3D Neon Snake</h1>
-      <span class="version-tag">WebGL 3D Edition</span>
+      <span class="version-tag">WebGL 3D</span>
     </header>
 
     <!-- Glassmorphism 3D HUD -->
@@ -36,7 +36,7 @@
           <button class="diff-btn" id="diffBlitz" data-difficulty="blitz" type="button">Blitz</button>
         </div>
 
-        <!-- Audio and Pause Icon Buttons -->
+        <!-- Audio, Pause, and Camera Buttons -->
         <div class="icon-controls">
           <button id="muteBtn" class="icon-btn" type="button" aria-label="Toggle Sound" aria-pressed="false" title="Toggle Sound (M)">
             <span class="icon-on">🔊</span>
@@ -56,7 +56,16 @@
     <!-- 3D Game Viewport Container -->
     <div class="game-container" id="gameContainer">
       <div id="webglContainer"></div>
+      
+      <!-- Start Game Tap Prompt -->
+      <div class="start-overlay" id="startOverlay">
+        <div class="start-card">
+          <span>TAP HERE OR STEER TO START</span>
+        </div>
+      </div>
+
       <div class="freeze-indicator" id="freezeIndicator" hidden>❄ FREEZE SLOW-MO</div>
+      
       <div class="pause-overlay" id="pauseOverlay" hidden>
         <div class="pause-card">
           <h2>GAME PAUSED</h2>
