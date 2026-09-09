@@ -327,6 +327,21 @@
     return mesh;
   }
 
+  // WebGL Resource Cleanup helper to avoid memory leaks
+  function disposeMesh(mesh) {
+    if (!mesh) return;
+    if (mesh.geometry && !mesh.geometry.userData?.isShared) {
+      mesh.geometry.dispose();
+    }
+    if (mesh.material && !mesh.material.userData?.isShared) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach(m => m.dispose());
+      } else {
+        mesh.material.dispose();
+      }
+    }
+  }
+
   function updateSnake3D(snakeArray, direction) {
     while (snakeMeshes.length < snakeArray.length) {
       const isHead = snakeMeshes.length === 0;
@@ -335,6 +350,7 @@
     while (snakeMeshes.length > snakeArray.length) {
       const oldMesh = snakeMeshes.pop();
       scene.remove(oldMesh);
+      disposeMesh(oldMesh);
     }
 
     for (let i = 0; i < snakeArray.length; i++) {

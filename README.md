@@ -4,14 +4,14 @@
 
 [![CI Pipeline](https://github.com/adarshkshitij/snake-game/actions/workflows/ci.yml/badge.svg)](https://github.com/adarshkshitij/snake-game/actions/workflows/ci.yml)
 [![Pages Deployment](https://github.com/adarshkshitij/snake-game/actions/workflows/deploy.yml/badge.svg)](https://github.com/adarshkshitij/snake-game/actions/workflows/deploy.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-00ffaa.svg)](LICENSE)
-[![Three.js](https://img.shields.io/badge/3D%20Engine-Three.js%20r128-00ffff.svg)](https://threejs.org/)
-[![Web Audio API](https://img.shields.io/badge/Audio-Web%20Audio%20Synth-ff2d87.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+[![AWS S3 + CloudFront](https://img.shields.io/badge/AWS-S3%20%2B%20CloudFront%20Ready-FF9900.svg?logo=amazon-aws)](AWS_DEPLOYMENT_GUIDE.md)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg?logo=docker)](Dockerfile)
 [![CodeRabbit Review](https://img.shields.io/badge/CodeRabbit-AI%20Reviewed-ffd700.svg)](CODERABBIT_REVIEW.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-00ffaa.svg)](LICENSE)
 
 **A hardware-accelerated 3D WebGL cyberpunk arcade snake game with real-time dynamic lighting, procedural 8-bit sound synthesis, and volumetric particle physics.**
 
-[🎮 Play Live Demo](https://adarshkshitij.github.io/snake-game) &bull; [📖 Architecture](#architecture) &bull; [🚀 Quick Start](#quick-start) &bull; [🐇 CodeRabbit Audit](CODERABBIT_REVIEW.md)
+[🎮 Play Live Demo](https://adarshkshitij.github.io/snake-game) &bull; [☁️ AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md) &bull; [📖 Architecture](#architecture) &bull; [🚀 Quick Start](#quick-start) &bull; [🐇 CodeRabbit Audit](CODERABBIT_REVIEW.md)
 
 <br/>
 
@@ -161,15 +161,16 @@ npm test
 
 ---
 
-## 🛠 DevOps & CI/CD Pipeline
-
-- **GitHub Actions CI (`devops/workflows/ci.yml`)**: Multi-version test matrix against Node.js 18.x, 20.x, and 22.x running syntax verification and headless Chrome E2E tests on every push.
-- **GitHub Pages CD (`devops/workflows/deploy.yml`)**: Continuous deployment automatically publishing the game to GitHub Pages on every release.
-- **Docker Containerization (`Dockerfile` & `docker-compose.yml`)**: Production-ready Nginx Alpine container with Gzip compression and browser caching headers (`docker compose up -d`).
-- **AI Code Review (`CODERABBIT_REVIEW.md`)**: Full architectural audit covering WebGL buffer lifecycle, memory leak elimination, and security standards.
+## 🛠 DevOps & Cloud Infrastructure
+ 
+ - **AWS S3 + CloudFront Deployment (`devops/aws/`)**: 1-click zero-cost ($0/mo Free Tier) cloud hosting with sub-10ms global edge delivery and automated cache invalidation ([Full AWS Guide](AWS_DEPLOYMENT_GUIDE.md)).
+ - **Terraform Infrastructure as Code (`devops/aws/main.tf`)**: Spin up S3, CloudFront OAC, and TLS certificates with `terraform apply`.
+ - **Docker Containerization (`Dockerfile` & `docker-compose.yml`)**: Multi-stage Nginx Alpine container serving static WebGL assets with Gzip compression (`npm run docker:up`).
+ - **AI Code Review Quality Gate (`.coderabbit.yaml` & `scripts/coderabbit-check.sh`)**: Integrated CodeRabbit review rules and local pre-commit check verifying WebGL buffer cleanups, audio state machines, and CSS isolation (`npm run coderabbit:review`).
+ - **GitHub Actions CI/CD (`devops/workflows/`)**: Multi-version test matrix against Node.js 18.x, 20.x, and 22.x running syntax verification, headless Chrome E2E tests, and automated AWS S3 deployment.
 
 > [!TIP]
-> To activate GitHub Actions CI/CD on your repository, copy `devops/workflows/*` into `.github/workflows/` (ensure your GitHub PAT/CLI has the `workflow` scope).
+> Check out the complete [AWS Deployment & DevOps Guide](AWS_DEPLOYMENT_GUIDE.md) for step-by-step instructions on AWS CLI setup, S3 bucket sync, CloudFront invalidation, and Docker on AWS App Runner/ECR.
 
 ---
 

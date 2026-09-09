@@ -10,6 +10,8 @@
     "test:unit": "node --test test/engine.test.js test/ui_and_buttons.test.js",
     "test:e2e": "node --test test/e2e_browser.test.js",
     "prepush": "bash scripts/pre-push.sh",
+    "coderabbit:review": "bash scripts/coderabbit-check.sh",
+    "aws:deploy": "bash devops/aws/deploy-s3-cloudfront.sh",
     "docker:build": "docker compose build",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
