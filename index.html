@@ -2,24 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Neon Snake Game</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Snake Game</h1>
+  <div class="arcade-shell">
+    <h1 class="title">Neon Snake</h1>
 
-  <div class="game-container">
-    <div id="score">Score: 0</div>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div class="hud">
+      <div class="hud-badges">
+        <div class="badge badge-score" id="score">
+          <span class="badge-label">Score</span>
+          <span class="badge-value">0</span>
+        </div>
+        <div class="badge badge-high">
+          <span class="badge-label">Best</span>
+          <span class="badge-value" id="highScore">0</span>
+        </div>
+      </div>
+
+      <div class="hud-controls">
+        <div class="difficulty-group" role="group" aria-label="Difficulty">
+          <button class="diff-btn" data-difficulty="easy">Easy</button>
+          <button class="diff-btn active" data-difficulty="normal">Normal</button>
+          <button class="diff-btn" data-difficulty="blitz">Blitz</button>
+        </div>
+
+        <div class="icon-controls">
+          <button id="muteBtn" class="icon-btn" type="button" aria-label="Mute sound" aria-pressed="false">
+            <span class="icon-on">🔊</span>
+            <span class="icon-off">🔇</span>
+          </button>
+          <button id="pauseBtn" class="icon-btn" type="button" aria-label="Pause game" aria-pressed="false">
+            <span class="icon-play">▶</span>
+            <span class="icon-pause">⏸</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-container">
+      <canvas id="gameCanvas" width="400" height="400"></canvas>
+      <div class="freeze-indicator" id="freezeIndicator" hidden>❄ Freeze</div>
+      <div class="pause-overlay" id="pauseOverlay" hidden>
+        <span>Paused</span>
+      </div>
+    </div>
+
+    <div class="dpad" aria-label="Touch controls">
+      <button class="dpad-btn dpad-up" data-dir="up" aria-label="Move up" type="button">▲</button>
+      <button class="dpad-btn dpad-left" data-dir="left" aria-label="Move left" type="button">◀</button>
+      <button class="dpad-btn dpad-center" aria-hidden="true" tabindex="-1"></button>
+      <button class="dpad-btn dpad-right" data-dir="right" aria-label="Move right" type="button">▶</button>
+      <button class="dpad-btn dpad-down" data-dir="down" aria-label="Move down" type="button">▼</button>
+    </div>
+
+    <p class="hint">Arrow keys / WASD to move &bull; Space to pause</p>
   </div>
 
   <div id="gameOver">
     <h2>Game Over</h2>
     <p>Final Score: <span id="finalScore">0</span></p>
+    <p class="new-best" id="newBestTag" hidden>🏆 New Best!</p>
     <button id="restartBtn">Play Again</button>
   </div>
 
+  <script src="engine.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

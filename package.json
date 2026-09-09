@@ -1,0 +1,12 @@
+{
+  "name": "neon-snake-game",
+  "version": "1.0.0",
+  "description": "Interactive Neon Snake Arcade with Web Audio synth & particle FX",
+  "main": "game.js",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": ["snake", "game", "arcade", "canvas", "neon"],
+  "author": "adarshkshitij",
+  "license": "MIT"
+}
