@@ -1,0 +1,43 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Unit & E2E Tests (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Validate JavaScript Syntax
+        run: |
+          node --check engine.js
+          node --check game.js
+
+      - name: Run Core Engine & Control Unit Tests
+        run: |
+          node --test test/engine.test.js
+          node --test test/ui_and_buttons.test.js
+
+      - name: Start Background Web Server & Run Headless Chrome E2E Suite
+        run: |
+          python3 -m http.server 8000 &
+          SERVER_PID=$!
+          sleep 2
+          node --test test/e2e_browser.test.js
+          kill $SERVER_PID

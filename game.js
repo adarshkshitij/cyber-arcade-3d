@@ -1,11 +1,11 @@
 // ==========================================================================
 // 3D Neon Snake Arcade - WebGL 3D Game Controller (Three.js + SnakeEngine)
+// High Performance, Memory-Managed & E2E-Tested Architecture
 // ==========================================================================
 
 (function () {
   'use strict';
 
-  // Check dependencies
   if (typeof THREE === 'undefined') {
     console.error('Three.js failed to load. Falling back or check network.');
     return;
@@ -64,13 +64,12 @@
         gain.connect(ctx.destination);
         osc.start();
         osc.stop(ctx.currentTime + duration);
-      } catch (e) {
-        // audio fail-safe
-      }
+      } catch (e) {}
     }
 
     return {
       isMuted: () => isMuted,
+      ensureContext: getContext,
       toggleMute: function () {
         isMuted = !isMuted;
         localStorage.setItem('snake_3d_muted', isMuted);
@@ -111,7 +110,7 @@
   })();
 
   // --------------------------------------------------------------------------
-  // Three.js 3D Setup
+  // Three.js 3D Setup & Memory-Managed Geometries
   // --------------------------------------------------------------------------
   const GRID_SIZE = 20;
   const CELL_SIZE = 1.0;
@@ -124,21 +123,79 @@
   let particles = [];
   let cameraMode = 'isometric'; // 'isometric' | 'follow'
 
+  // Pre-allocated Shared Geometries & Materials (Memory Leak Prevention)
+  const bodyGeo = new THREE.BoxGeometry(0.85, 0.75, 0.85);
+  const headGeo = new THREE.BoxGeometry(0.9, 0.82, 0.9);
+  const eyeGeo = new THREE.SphereGeometry(0.12, 10, 10);
+  const pupilGeo = new THREE.SphereGeometry(0.06, 8, 8);
+  const particleGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+
+  const headMat = new THREE.MeshStandardMaterial({
+    color: 0x00ff88,
+    emissive: 0x00ff88,
+    emissiveIntensity: 0.35,
+    roughness: 0.25,
+    metalness: 0.4
+  });
+
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x00cc66,
+    emissive: 0x004422,
+    emissiveIntensity: 0.2,
+    roughness: 0.3,
+    metalness: 0.3
+  });
+
+  const eyeWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+
+  // Shared Food Geometries and Materials
+  const appleGeo = new THREE.SphereGeometry(0.42, 16, 16);
+  const appleMat = new THREE.MeshStandardMaterial({
+    color: 0xff2d55,
+    emissive: 0xcc0033,
+    emissiveIntensity: 0.4,
+    roughness: 0.3,
+    metalness: 0.2
+  });
+
+  const goldenGeo = new THREE.OctahedronGeometry(0.5, 0);
+  const goldenMat = new THREE.MeshStandardMaterial({
+    color: 0xffd700,
+    emissive: 0xffaa00,
+    emissiveIntensity: 0.6,
+    roughness: 0.1,
+    metalness: 0.9
+  });
+
+  const freezeGeo = new THREE.BoxGeometry(0.7, 0.7, 0.7);
+  const freezeMat = new THREE.MeshStandardMaterial({
+    color: 0x00bfff,
+    emissive: 0x0099ff,
+    emissiveIntensity: 0.5,
+    roughness: 0.2,
+    metalness: 0.3
+  });
+
+  // Particle Material Cache
+  const particleMatCache = {
+    golden: new THREE.MeshBasicMaterial({ color: 0xffd700 }),
+    freeze: new THREE.MeshBasicMaterial({ color: 0x00bfff }),
+    normal: new THREE.MeshBasicMaterial({ color: 0xff2d55 })
+  };
+
   function initThree() {
     const width = container.clientWidth || 400;
     const height = container.clientHeight || 400;
 
-    // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x060814);
     scene.fog = new THREE.FogExp2(0x060814, 0.025);
 
-    // Camera
     camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     setCameraView('isometric');
 
-    // WebGL Renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
@@ -147,7 +204,6 @@
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // Lights
     const ambientLight = new THREE.AmbientLight(0x404868, 1.2);
     scene.add(ambientLight);
 
@@ -164,15 +220,11 @@
     sunLight.shadow.camera.bottom = -15;
     scene.add(sunLight);
 
-    // Dynamic Point Light on Snake Head
     snakeHeadLight = new THREE.PointLight(0x00ff88, 2.5, 9);
     snakeHeadLight.position.set(0, 1.5, 0);
     scene.add(snakeHeadLight);
 
-    // 3D Grid Arena Platform
     createArena();
-
-    // Window resize handler
     window.addEventListener('resize', onWindowResize);
   }
 
@@ -190,7 +242,6 @@
   function createArena() {
     const arenaGroup = new THREE.Group();
 
-    // Main Floor
     const floorGeo = new THREE.BoxGeometry(GRID_SIZE * CELL_SIZE, 0.4, GRID_SIZE * CELL_SIZE);
     const floorMat = new THREE.MeshStandardMaterial({
       color: 0x0a0e24,
@@ -202,12 +253,10 @@
     floorMesh.receiveShadow = true;
     arenaGroup.add(floorMesh);
 
-    // Neon Grid Lines Helper
     const gridHelper = new THREE.GridHelper(GRID_SIZE * CELL_SIZE, GRID_SIZE, 0x00ffaa, 0x142044);
     gridHelper.position.y = 0.01;
     arenaGroup.add(gridHelper);
 
-    // Outer Neon Glowing Walls
     const wallMat = new THREE.MeshStandardMaterial({
       color: 0x00ffff,
       emissive: 0x00ffff,
@@ -252,28 +301,6 @@
     return { x: wx, z: wz };
   }
 
-  // --------------------------------------------------------------------------
-  // 3D Snake & Food Meshes
-  // --------------------------------------------------------------------------
-  const bodyGeo = new THREE.BoxGeometry(0.85, 0.75, 0.85);
-  const headGeo = new THREE.BoxGeometry(0.9, 0.82, 0.9);
-
-  const headMat = new THREE.MeshStandardMaterial({
-    color: 0x00ff88,
-    emissive: 0x00ff88,
-    emissiveIntensity: 0.35,
-    roughness: 0.25,
-    metalness: 0.4
-  });
-
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x00cc66,
-    emissive: 0x004422,
-    emissiveIntensity: 0.2,
-    roughness: 0.3,
-    metalness: 0.3
-  });
-
   function createSnakeSegment(isHead = false) {
     const mesh = new THREE.Mesh(isHead ? headGeo : bodyGeo, isHead ? headMat : bodyMat);
     mesh.castShadow = true;
@@ -281,11 +308,6 @@
     mesh.position.y = 0.4;
 
     if (isHead) {
-      const eyeGeo = new THREE.SphereGeometry(0.12, 12, 12);
-      const eyeWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      const pupilGeo = new THREE.SphereGeometry(0.06, 8, 8);
-      const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-
       const leftEye = new THREE.Mesh(eyeGeo, eyeWhiteMat);
       leftEye.position.set(-0.25, 0.25, 0.38);
       const leftPupil = new THREE.Mesh(pupilGeo, pupilMat);
@@ -344,32 +366,14 @@
 
     let geo, mat;
     if (food.type === 'golden') {
-      geo = new THREE.OctahedronGeometry(0.5, 0);
-      mat = new THREE.MeshStandardMaterial({
-        color: 0xffd700,
-        emissive: 0xffaa00,
-        emissiveIntensity: 0.6,
-        roughness: 0.1,
-        metalness: 0.9
-      });
+      geo = goldenGeo;
+      mat = goldenMat;
     } else if (food.type === 'freeze') {
-      geo = new THREE.BoxGeometry(0.7, 0.7, 0.7);
-      mat = new THREE.MeshStandardMaterial({
-        color: 0x00bfff,
-        emissive: 0x0099ff,
-        emissiveIntensity: 0.5,
-        roughness: 0.2,
-        metalness: 0.3
-      });
+      geo = freezeGeo;
+      mat = freezeMat;
     } else {
-      geo = new THREE.SphereGeometry(0.42, 16, 16);
-      mat = new THREE.MeshStandardMaterial({
-        color: 0xff2d55,
-        emissive: 0xcc0033,
-        emissiveIntensity: 0.4,
-        roughness: 0.3,
-        metalness: 0.2
-      });
+      geo = appleGeo;
+      mat = appleMat;
     }
 
     foodMesh = new THREE.Mesh(geo, mat);
@@ -379,12 +383,11 @@
     scene.add(foodMesh);
   }
 
-  function create3DParticles(x, z, colorHex, count = 20) {
-    const pGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
-    const pMat = new THREE.MeshBasicMaterial({ color: colorHex });
+  function create3DParticles(x, z, type = 'normal', count = 20) {
+    const mat = particleMatCache[type] || particleMatCache.normal;
 
     for (let i = 0; i < count; i++) {
-      const mesh = new THREE.Mesh(pGeo, pMat);
+      const mesh = new THREE.Mesh(particleGeo, mat);
       mesh.position.set(x, 0.4, z);
       const angle = Math.random() * Math.PI * 2;
       const speed = 1.5 + Math.random() * 3.5;
@@ -444,7 +447,7 @@
       baseSpeed: SPEEDS[currentDifficulty]
     });
 
-    // Clear 3D visuals
+    // Clear meshes safely
     snakeMeshes.forEach(m => scene.remove(m));
     snakeMeshes = [];
     if (foodMesh) { scene.remove(foodMesh); foodMesh = null; }
@@ -455,7 +458,6 @@
     updateSnake3D(gameState.snake, gameState.direction);
     spawnFood3D(gameState.food);
 
-    // Hide modals and show start prompt
     gameOverModal.hidden = true;
     pauseOverlay.hidden = true;
     freezeIndicator.hidden = true;
@@ -467,6 +469,7 @@
 
   function startGame() {
     if (!isGameStarted) {
+      SoundFX.ensureContext();
       isGameStarted = true;
       startOverlay.hidden = true;
       lastTickTime = performance.now();
@@ -498,17 +501,14 @@
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
 
-    // Rotate & bob 3D food continuously (even on start screen!)
     if (foodMesh) {
       foodMesh.rotation.y += 2.0 * delta;
       foodMesh.rotation.x += 0.8 * delta;
       foodMesh.position.y = 0.45 + Math.sin(now * 0.005) * 0.12;
     }
 
-    // Update 3D particles
     updateParticles(delta);
 
-    // Camera follow mode
     if (cameraMode === 'follow' && gameState && gameState.snake.length > 0) {
       const head = gridToWorld(gameState.snake[0].x, gameState.snake[0].y);
       camera.position.x += (head.x - camera.position.x) * 0.05;
@@ -516,7 +516,6 @@
       camera.lookAt(head.x, 0, head.z);
     }
 
-    // Only tick snake if game has been started by user input
     if (isGameStarted && gameState && !gameState.isPaused && !gameState.isGameOver) {
       const elapsed = now - lastTickTime;
       if (elapsed >= gameState.currentSpeed) {
@@ -535,13 +534,13 @@
 
             if (food.type === 'golden') {
               SoundFX.golden();
-              create3DParticles(wPos.x, wPos.z, 0xffd700, 30);
+              create3DParticles(wPos.x, wPos.z, 'golden', 30);
             } else if (food.type === 'freeze') {
               SoundFX.freeze();
-              create3DParticles(wPos.x, wPos.z, 0x00bfff, 25);
+              create3DParticles(wPos.x, wPos.z, 'freeze', 25);
             } else {
               SoundFX.eat();
-              create3DParticles(wPos.x, wPos.z, 0xff2d55, 18);
+              create3DParticles(wPos.x, wPos.z, 'normal', 18);
             }
 
             spawnFood3D(gameState.food);
@@ -552,7 +551,6 @@
       }
     }
 
-    // Render WebGL frame
     renderer.render(scene, camera);
   }
 
@@ -599,12 +597,10 @@
   }
 
   function initControls() {
-    // Start Prompt click
     startOverlay.addEventListener('click', () => {
       startGame();
     });
 
-    // Difficulty Buttons
     diffButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -612,7 +608,6 @@
       });
     });
 
-    // Mute Button
     muteBtn.addEventListener('click', (e) => {
       e.preventDefault();
       const muted = SoundFX.toggleMute();
@@ -625,7 +620,6 @@
     muteBtn.querySelector('.icon-on').hidden = isMutedInitial;
     muteBtn.querySelector('.icon-off').hidden = !isMutedInitial;
 
-    // Pause & Resume Buttons
     pauseBtn.addEventListener('click', (e) => {
       e.preventDefault();
       togglePause();
@@ -635,19 +629,16 @@
       togglePause();
     });
 
-    // Camera Switch Button
     cameraBtn.addEventListener('click', (e) => {
       e.preventDefault();
       setCameraView(cameraMode === 'isometric' ? 'follow' : 'isometric');
     });
 
-    // Play Again / Restart Button
     restartBtn.addEventListener('click', (e) => {
       e.preventDefault();
       initGame();
     });
 
-    // D-Pad Touch / Mouse Controls
     dpadButtons.forEach(btn => {
       const dir = btn.dataset.dir;
       if (!dir) return;
@@ -662,7 +653,6 @@
       btn.addEventListener('pointerdown', trigger);
     });
 
-    // Desktop Keyboard Controls
     window.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
         e.preventDefault();
@@ -712,9 +702,6 @@
     });
   }
 
-  // --------------------------------------------------------------------------
-  // Start
-  // --------------------------------------------------------------------------
   function start() {
     initThree();
     initControls();

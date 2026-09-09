@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  snake-game:
+    build: .
+    container_name: snake-3d-arcade
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - NODE_ENV=production
