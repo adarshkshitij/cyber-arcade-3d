@@ -183,6 +183,24 @@ This project was built and deployed collaboratively using **Herdr** multi-agent 
 
 ---
 
+## 🤝 Contributing & Community
+
+Contributions are welcome! Check out our [Contributing Guide](CONTRIBUTING.md) for full instructions on local setup, running tests, and submitting PRs.
+
+```bash
+# Useful Contributor Commands
+npm run dev         # Start local dev server (http://localhost:8000)
+npm run check       # Validate JavaScript syntax
+npm run test:unit   # Run fast physics & control unit tests
+npm run test:e2e    # Run headless Chrome E2E browser tests
+npm run prepush     # Run full pre-push validation gate
+npm run docker:up   # Run in production container (http://localhost:8080)
+```
+
+Please review our [Code of Conduct](CODE_OF_CONDUCT.md) before participating.
+
+---
+
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE) — free for personal and commercial use.

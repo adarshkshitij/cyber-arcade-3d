@@ -1,12 +1,29 @@
 {
-  "name": "neon-snake-game",
-  "version": "1.0.0",
-  "description": "Interactive Neon Snake Arcade with Web Audio synth & particle FX",
+  "name": "3d-neon-snake-arcade",
+  "version": "1.1.0",
+  "description": "Hardware-accelerated 3D WebGL cyberpunk arcade snake game with Web Audio synth and E2E tests",
   "main": "game.js",
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "dev": "python3 -m http.server 8000",
+    "check": "node --check engine.js && node --check game.js",
+    "test": "node --test test/*.test.js",
+    "test:unit": "node --test test/engine.test.js test/ui_and_buttons.test.js",
+    "test:e2e": "node --test test/e2e_browser.test.js",
+    "prepush": "bash scripts/pre-push.sh",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
   },
-  "keywords": ["snake", "game", "arcade", "canvas", "neon"],
-  "author": "adarshkshitij",
+  "keywords": [
+    "snake",
+    "webgl",
+    "threejs",
+    "arcade",
+    "game",
+    "web-audio",
+    "e2e-testing",
+    "cyberpunk"
+  ],
+  "author": "Adarsh Kshitij",
   "license": "MIT"
 }
