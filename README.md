@@ -4,18 +4,20 @@
 
 [![CI Pipeline](https://img.shields.io/badge/CI%20Pipeline-Passing%20(Node%2018%2F20%2F22)-00ffaa.svg?logo=github-actions&logoColor=white)](devops/workflows/ci.yml)
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Deployment-00e5ff.svg?logo=github&logoColor=white)](https://adarshkshitij.github.io/cyber-arcade-3d)
+[![Discussions Q&A](https://img.shields.io/badge/Discussions-Community%20Q%26A-purple.svg?logo=github&logoColor=white)](https://github.com/adarshkshitij/cyber-arcade-3d/discussions)
+[![PWA](https://img.shields.io/badge/PWA-Offline%20Ready-00e5ff.svg?logo=pwa&logoColor=white)](sw.js)
 [![Multi-Agent Swarm](https://img.shields.io/badge/Architecture-Multi--Agent%20Swarm-9945FF.svg?logo=openai&logoColor=white)](#-multi-agent-autonomous-engineering)
 [![Headless Cloud](https://img.shields.io/badge/Env-Headless%20Ubuntu%20%2F%20AWS-E95420.svg?logo=ubuntu&logoColor=white)](#-headless-linux--cloud-architecture)
 [![AWS S3 + CloudFront](https://img.shields.io/badge/AWS-S3%20%2B%20CloudFront%20Ready-FF9900.svg?logo=amazon-aws)](AWS_DEPLOYMENT_GUIDE.md)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg?logo=docker)](Dockerfile)
 [![CodeRabbit Review](https://img.shields.io/badge/CodeRabbit-AI%20Reviewed-ffd700.svg)](CODERABBIT_REVIEW.md)
 [![SonarCloud Quality Gate](https://img.shields.io/badge/SonarCloud-Quality%20Gate%20A-4E9BCD.svg?logo=sonarcloud&logoColor=white)](sonar-project.properties)
-[![Tests Passing](https://img.shields.io/badge/Tests-33%2F33%20Passing-00ffaa.svg)](test/)
+[![Tests Passing](https://img.shields.io/badge/Tests-50%2F50%20Passing-00ffaa.svg)](test/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ffaa.svg)](LICENSE)
 
 **A hardware-accelerated 3D WebGL cyberpunk arcade cabinet featuring Neon Snake and Turbo Highway Racer with real-time dynamic lighting, procedural 8-bit sound synthesis, and responsive widescreen controls.**
 
-[🎮 Play Live Demo](https://adarshkshitij.github.io/cyber-arcade-3d) &bull; [☁️ AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md) &bull; [📖 Architecture](#architecture) &bull; [🚀 Quick Start](#quick-start) &bull; [🐇 CodeRabbit Audit](CODERABBIT_REVIEW.md)
+[🎮 Play Live Demo](https://adarshkshitij.github.io/cyber-arcade-3d) &bull; [💬 Discussions FAQ](https://github.com/adarshkshitij/cyber-arcade-3d/discussions) &bull; [☁️ AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md) &bull; [📖 Architecture](#architecture) &bull; [🚀 Quick Start](#quick-start) &bull; [🐇 CodeRabbit Audit](CODERABBIT_REVIEW.md)
 
 <br/>
 
@@ -77,6 +79,14 @@ flowchart TD
 - **High-Speed Traffic Dodging**: Oncoming cyberpunk vehicles across 3 lanes (Left, Center, Right) with randomized colors and velocities.
 - **Nitro Boost & Telemetry HUD**: Real-time speedometer (km/h) and gradient nitro meter. Collect floating nitro capsules to trigger high-velocity boost with camera zoom and particle trails!
 - **Procedural Engine Acoustics**: Web Audio synthesis for engine revs, tire swerving, nitro burst chimes, and crash explosions.
+
+### 🛠️ Cyber Garage: 3D Vehicle Customizer
+Players can select between 3 deterministic vehicle classes directly from the HUD:
+| Vehicle | Class Badge | Handling | Speed Modifier | Nitro Duration | Visual Skin & Lighting |
+|:---|:---:|:---:|:---:|:---:|:---|
+| **Cyber Interceptor** | 🏎️ | Balanced (`1.0x`) | `+0 km/h` | `1.0x` | Neon Cyan chassis with Hot-Pink underglow |
+| **Quantum Speeder** | ⚡ | High Agility (`1.25x`) | `+20 km/h` | `0.85x` | Golden Yellow chassis with Violet photon trail |
+| **Titan Hauler** | 🛡️ | Heavy Armor (`0.75x`) | `-10 km/h` | `1.40x` | Cyber Emerald armor with Amber headlights |
 
 ### 🐍 3D Neon Snake (`engine.js`)
 - **4 Unique Game Modes**:
