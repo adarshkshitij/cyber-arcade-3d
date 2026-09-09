@@ -1,572 +1,716 @@
-// Snake Game — presentation layer (rendering, input, audio, FX)
-// Game rules/state live in engine.js (window.SnakeEngine); this file just drives it.
+// ==========================================================================
+// 3D Neon Snake Arcade - WebGL 3D Game Controller (Three.js + SnakeEngine)
+// ==========================================================================
 
 (function () {
   'use strict';
 
-  const Engine = window.SnakeEngine;
-  const DIRECTIONS = Engine.DIRECTIONS;
+  // Check dependencies
+  if (typeof THREE === 'undefined') {
+    console.error('Three.js failed to load. Falling back or check network.');
+    return;
+  }
+  if (typeof SnakeEngine === 'undefined') {
+    console.error('SnakeEngine failed to load. Ensure engine.js is included.');
+    return;
+  }
 
-  // ---------------------------------------------------------------------
-  // DOM references
-  // ---------------------------------------------------------------------
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-
-  const scoreEl = document.getElementById('score').querySelector('.badge-value');
-  const highScoreEl = document.getElementById('highScore');
-  const gameOverOverlay = document.getElementById('gameOver');
+  // DOM Elements
+  const container = document.getElementById('webglContainer');
+  const scoreVal = document.getElementById('score');
+  const highScoreVal = document.getElementById('highScore');
+  const freezeIndicator = document.getElementById('freezeIndicator');
+  const pauseOverlay = document.getElementById('pauseOverlay');
+  const gameOverModal = document.getElementById('gameOver');
   const finalScoreEl = document.getElementById('finalScore');
   const newBestTag = document.getElementById('newBestTag');
   const restartBtn = document.getElementById('restartBtn');
+  const resumeBtn = document.getElementById('resumeBtn');
   const muteBtn = document.getElementById('muteBtn');
   const pauseBtn = document.getElementById('pauseBtn');
-  const pauseOverlay = document.getElementById('pauseOverlay');
-  const freezeIndicator = document.getElementById('freezeIndicator');
-  const diffButtons = Array.from(document.querySelectorAll('.diff-btn'));
-  const dpadButtons = Array.from(document.querySelectorAll('.dpad-btn[data-dir]'));
+  const cameraBtn = document.getElementById('cameraBtn');
+  const diffButtons = document.querySelectorAll('.diff-btn');
+  const dpadButtons = document.querySelectorAll('.dpad-btn');
 
-  // ---------------------------------------------------------------------
-  // Grid / rendering configuration
-  // ---------------------------------------------------------------------
-  const GRID_SIZE = 20;
-  const TILE_SIZE = canvas.width / GRID_SIZE;
+  // Audio Synthesizer (Web Audio API)
+  const SoundFX = (function () {
+    let audioCtx = null;
+    let isMuted = localStorage.getItem('snake_3d_muted') === 'true';
 
-  const DIFFICULTY_SPEEDS = {
-    easy: 145,
-    normal: 105,
-    blitz: 68
-  };
-
-  const HIGH_SCORE_KEY = 'neonSnake.highScore';
-  const MUTE_KEY = 'neonSnake.muted';
-
-  // ---------------------------------------------------------------------
-  // Audio — lightweight Web Audio API synth (no external assets)
-  // ---------------------------------------------------------------------
-  const Audio = (function () {
-    let ctxAudio = null;
-    let masterGain = null;
-    let muted = localStorage.getItem(MUTE_KEY) === 'true';
-
-    function ensureContext() {
-      if (!ctxAudio) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        ctxAudio = new AC();
-        masterGain = ctxAudio.createGain();
-        masterGain.gain.value = muted ? 0 : 0.45;
-        masterGain.connect(ctxAudio.destination);
+    function getContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
       }
-      if (ctxAudio.state === 'suspended') {
-        ctxAudio.resume();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
       }
-      return ctxAudio;
+      return audioCtx;
     }
 
-    function setMuted(next) {
-      muted = next;
-      localStorage.setItem(MUTE_KEY, String(muted));
-      if (masterGain && ctxAudio) {
-        masterGain.gain.setTargetAtTime(muted ? 0 : 0.45, ctxAudio.currentTime, 0.01);
+    function playTone(freq, type, duration, gainVal = 0.15) {
+      if (isMuted) return;
+      try {
+        const ctx = getContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {
+        // audio fail-safe
       }
-    }
-
-    function toggleMute() {
-      setMuted(!muted);
-      return muted;
-    }
-
-    function tone({ freq, type = 'sine', duration = 0.15, gain = 0.3, freqEnd = null, delay = 0 }) {
-      const ac = ensureContext();
-      const t0 = ac.currentTime + delay;
-      const osc = ac.createOscillator();
-      const g = ac.createGain();
-
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, t0);
-      if (freqEnd !== null) {
-        osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd, 1), t0 + duration);
-      }
-
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.linearRampToValueAtTime(gain, t0 + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
-
-      osc.connect(g).connect(masterGain);
-      osc.start(t0);
-      osc.stop(t0 + duration + 0.03);
-    }
-
-    function playEat() {
-      tone({ freq: 620, type: 'triangle', duration: 0.09, gain: 0.28, freqEnd: 980 });
-    }
-
-    function playGolden() {
-      [880, 1108, 1318, 1568].forEach((f, i) =>
-        tone({ freq: f, type: 'sine', duration: 0.18, gain: 0.22, delay: i * 0.06 })
-      );
-    }
-
-    function playFreeze() {
-      tone({ freq: 1400, type: 'sawtooth', duration: 0.4, gain: 0.15, freqEnd: 140 });
-      tone({ freq: 900, type: 'sine', duration: 0.45, gain: 0.1, freqEnd: 100, delay: 0.03 });
-    }
-
-    function playCrash() {
-      [110, 116.5, 155.6].forEach((f) => tone({ freq: f, type: 'square', duration: 0.45, gain: 0.2 }));
-
-      const ac = ensureContext();
-      const bufferSize = Math.floor(ac.sampleRate * 0.35);
-      const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-      }
-      const noise = ac.createBufferSource();
-      noise.buffer = buffer;
-      const noiseGain = ac.createGain();
-      noiseGain.gain.value = 0.18;
-      noise.connect(noiseGain).connect(masterGain);
-      noise.start();
     }
 
     return {
-      ensureContext,
-      toggleMute,
-      isMuted: () => muted,
-      playEat,
-      playGolden,
-      playFreeze,
-      playCrash
+      isMuted: () => isMuted,
+      toggleMute: function () {
+        isMuted = !isMuted;
+        localStorage.setItem('snake_3d_muted', isMuted);
+        return isMuted;
+      },
+      eat: function () {
+        playTone(520, 'square', 0.08, 0.15);
+        setTimeout(() => playTone(780, 'square', 0.1, 0.15), 60);
+      },
+      golden: function () {
+        [587, 740, 880, 1174].forEach((f, i) => {
+          setTimeout(() => playTone(f, 'triangle', 0.14, 0.2), i * 50);
+        });
+      },
+      freeze: function () {
+        playTone(880, 'sine', 0.25, 0.2);
+        setTimeout(() => playTone(440, 'sine', 0.3, 0.2), 100);
+      },
+      crash: function () {
+        if (isMuted) return;
+        try {
+          const ctx = getContext();
+          if (!ctx) return;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.4);
+        } catch (e) {}
+      }
     };
   })();
 
-  // ---------------------------------------------------------------------
-  // Particle burst FX
-  // ---------------------------------------------------------------------
-  let particles = [];
+  // --------------------------------------------------------------------------
+  // Three.js 3D Setup
+  // --------------------------------------------------------------------------
+  const GRID_SIZE = 20;
+  const CELL_SIZE = 1.0;
+  const HALF_GRID = (GRID_SIZE * CELL_SIZE) / 2;
 
-  function spawnParticles(cx, cy, color, count = 16) {
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 1 + Math.random() * 3.2;
-      particles.push({
-        x: cx,
-        y: cy,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 1,
-        decay: 0.025 + Math.random() * 0.025,
-        size: 1.5 + Math.random() * 2.5,
-        color
+  let scene, camera, renderer;
+  let snakeHeadLight;
+  let snakeMeshes = [];
+  let foodMesh = null;
+  let particles = [];
+  let cameraMode = 'isometric'; // 'isometric' | 'follow'
+
+  function initThree() {
+    const width = container.clientWidth || 400;
+    const height = container.clientHeight || 400;
+
+    // Scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x060814);
+    scene.fog = new THREE.FogExp2(0x060814, 0.025);
+
+    // Camera
+    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    setCameraView('isometric');
+
+    // WebGL Renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0x404868, 1.2);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    sunLight.position.set(15, 25, 20);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 60;
+    sunLight.shadow.camera.left = -15;
+    sunLight.shadow.camera.right = 15;
+    sunLight.shadow.camera.top = 15;
+    sunLight.shadow.camera.bottom = -15;
+    scene.add(sunLight);
+
+    // Dynamic Point Light on Snake Head
+    snakeHeadLight = new THREE.PointLight(0x00ff88, 2.5, 9);
+    snakeHeadLight.position.set(0, 1.5, 0);
+    scene.add(snakeHeadLight);
+
+    // 3D Grid Arena Platform
+    createArena();
+
+    // Window resize handler
+    window.addEventListener('resize', onWindowResize);
+  }
+
+  function setCameraView(mode) {
+    cameraMode = mode;
+    if (mode === 'isometric') {
+      camera.position.set(0, 21, 19);
+      camera.lookAt(0, -0.5, 0);
+    } else {
+      camera.position.set(0, 15, 14);
+      camera.lookAt(0, 0, 0);
+    }
+  }
+
+  function createArena() {
+    const arenaGroup = new THREE.Group();
+
+    // Main Floor
+    const floorGeo = new THREE.BoxGeometry(GRID_SIZE * CELL_SIZE, 0.4, GRID_SIZE * CELL_SIZE);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x0a0e24,
+      roughness: 0.6,
+      metalness: 0.3
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.2;
+    floorMesh.receiveShadow = true;
+    arenaGroup.add(floorMesh);
+
+    // Neon Grid Lines Helper
+    const gridHelper = new THREE.GridHelper(GRID_SIZE * CELL_SIZE, GRID_SIZE, 0x00ffaa, 0x142044);
+    gridHelper.position.y = 0.01;
+    arenaGroup.add(gridHelper);
+
+    // Outer Neon Glowing Walls
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: 0x00ffff,
+      emissive: 0x00ffff,
+      emissiveIntensity: 0.3,
+      roughness: 0.2
+    });
+    const wallThick = 0.3;
+    const wallHeight = 0.6;
+    const size = GRID_SIZE * CELL_SIZE;
+
+    const northWall = new THREE.Mesh(new THREE.BoxGeometry(size + wallThick * 2, wallHeight, wallThick), wallMat);
+    northWall.position.set(0, wallHeight / 2, -size / 2 - wallThick / 2);
+    arenaGroup.add(northWall);
+
+    const southWall = new THREE.Mesh(new THREE.BoxGeometry(size + wallThick * 2, wallHeight, wallThick), wallMat);
+    southWall.position.set(0, wallHeight / 2, size / 2 + wallThick / 2);
+    arenaGroup.add(southWall);
+
+    const westWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallHeight, size), wallMat);
+    westWall.position.set(-size / 2 - wallThick / 2, wallHeight / 2, 0);
+    arenaGroup.add(westWall);
+
+    const eastWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wallHeight, size), wallMat);
+    eastWall.position.set(size / 2 + wallThick / 2, wallHeight / 2, 0);
+    arenaGroup.add(eastWall);
+
+    scene.add(arenaGroup);
+  }
+
+  function onWindowResize() {
+    if (!renderer || !container) return;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+  }
+
+  // Grid coordinate (0..19, 0..19) to 3D world space (X, Z)
+  function gridToWorld(gx, gy) {
+    const wx = (gx + 0.5) * CELL_SIZE - HALF_GRID;
+    const wz = (gy + 0.5) * CELL_SIZE - HALF_GRID;
+    return { x: wx, z: wz };
+  }
+
+  // --------------------------------------------------------------------------
+  // 3D Snake & Food Meshes
+  // --------------------------------------------------------------------------
+  const bodyGeo = new THREE.BoxGeometry(0.85, 0.75, 0.85);
+  const headGeo = new THREE.BoxGeometry(0.9, 0.82, 0.9);
+
+  const headMat = new THREE.MeshStandardMaterial({
+    color: 0x00ff88,
+    emissive: 0x00ff88,
+    emissiveIntensity: 0.35,
+    roughness: 0.25,
+    metalness: 0.4
+  });
+
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x00cc66,
+    emissive: 0x004422,
+    emissiveIntensity: 0.2,
+    roughness: 0.3,
+    metalness: 0.3
+  });
+
+  function createSnakeSegment(isHead = false) {
+    const mesh = new THREE.Mesh(isHead ? headGeo : bodyGeo, isHead ? headMat : bodyMat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.position.y = 0.4;
+
+    if (isHead) {
+      // 3D Eyes
+      const eyeGeo = new THREE.SphereGeometry(0.12, 12, 12);
+      const eyeWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const pupilGeo = new THREE.SphereGeometry(0.06, 8, 8);
+      const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+
+      const leftEye = new THREE.Mesh(eyeGeo, eyeWhiteMat);
+      leftEye.position.set(-0.25, 0.25, 0.38);
+      const leftPupil = new THREE.Mesh(pupilGeo, pupilMat);
+      leftPupil.position.set(0, 0, 0.08);
+      leftEye.add(leftPupil);
+      mesh.add(leftEye);
+
+      const rightEye = new THREE.Mesh(eyeGeo, eyeWhiteMat);
+      rightEye.position.set(0.25, 0.25, 0.38);
+      const rightPupil = new THREE.Mesh(pupilGeo, pupilMat);
+      rightPupil.position.set(0, 0, 0.08);
+      rightEye.add(rightPupil);
+      mesh.add(rightEye);
+    }
+
+    scene.add(mesh);
+    return mesh;
+  }
+
+  function updateSnake3D(snakeArray, direction) {
+    // Add extra meshes if snake grew
+    while (snakeMeshes.length < snakeArray.length) {
+      const isHead = snakeMeshes.length === 0;
+      snakeMeshes.push(createSnakeSegment(isHead));
+    }
+    // Remove extra meshes if snake shrank
+    while (snakeMeshes.length > snakeArray.length) {
+      const oldMesh = snakeMeshes.pop();
+      scene.remove(oldMesh);
+    }
+
+    for (let i = 0; i < snakeArray.length; i++) {
+      const seg = snakeArray[i];
+      const pos = gridToWorld(seg.x, seg.y);
+      const mesh = snakeMeshes[i];
+      mesh.position.x = pos.x;
+      mesh.position.z = pos.z;
+
+      // Orient head towards direction
+      if (i === 0) {
+        let angle = 0;
+        if (direction.x === 1) angle = Math.PI / 2;
+        else if (direction.x === -1) angle = -Math.PI / 2;
+        else if (direction.y === 1) angle = Math.PI;
+        else if (direction.y === -1) angle = 0;
+        mesh.rotation.y = angle;
+
+        // Move head point light
+        snakeHeadLight.position.set(pos.x, 1.2, pos.z);
+      }
+    }
+  }
+
+  function spawnFood3D(food) {
+    if (foodMesh) {
+      scene.remove(foodMesh);
+      foodMesh = null;
+    }
+    if (!food) return;
+
+    let geo, mat;
+    if (food.type === 'golden') {
+      geo = new THREE.OctahedronGeometry(0.5, 0);
+      mat = new THREE.MeshStandardMaterial({
+        color: 0xffd700,
+        emissive: 0xffaa00,
+        emissiveIntensity: 0.6,
+        roughness: 0.1,
+        metalness: 0.9
+      });
+    } else if (food.type === 'freeze') {
+      geo = new THREE.BoxGeometry(0.7, 0.7, 0.7);
+      mat = new THREE.MeshStandardMaterial({
+        color: 0x00bfff,
+        emissive: 0x0099ff,
+        emissiveIntensity: 0.5,
+        roughness: 0.2,
+        metalness: 0.3
+      });
+    } else {
+      // Normal Apple
+      geo = new THREE.SphereGeometry(0.42, 16, 16);
+      mat = new THREE.MeshStandardMaterial({
+        color: 0xff2d55,
+        emissive: 0xcc0033,
+        emissiveIntensity: 0.4,
+        roughness: 0.3,
+        metalness: 0.2
       });
     }
+
+    foodMesh = new THREE.Mesh(geo, mat);
+    foodMesh.castShadow = true;
+    const pos = gridToWorld(food.x, food.y);
+    foodMesh.position.set(pos.x, 0.45, pos.z);
+    scene.add(foodMesh);
   }
 
-  function updateParticles() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vx *= 0.95;
-      p.vy *= 0.95;
-      p.life -= p.decay;
-      if (p.life <= 0) particles.splice(i, 1);
+  // 3D Particle Bursts
+  function create3DParticles(x, z, colorHex, count = 20) {
+    const pGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+    const pMat = new THREE.MeshBasicMaterial({ color: colorHex });
+
+    for (let i = 0; i < count; i++) {
+      const mesh = new THREE.Mesh(pGeo, pMat);
+      mesh.position.set(x, 0.4, z);
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.5 + Math.random() * 3.5;
+      const velocity = new THREE.Vector3(
+        Math.cos(angle) * speed,
+        2.5 + Math.random() * 4.0,
+        Math.sin(angle) * speed
+      );
+      scene.add(mesh);
+      particles.push({ mesh, velocity, life: 1.0 });
     }
   }
 
-  function drawParticles() {
-    particles.forEach((p) => {
-      ctx.save();
-      ctx.globalAlpha = Math.max(0, p.life);
-      ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    });
+  function updateParticles(delta) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= delta * 2.0;
+      if (p.life <= 0) {
+        scene.remove(p.mesh);
+        particles.splice(i, 1);
+        continue;
+      }
+      p.velocity.y -= 9.8 * delta; // gravity
+      p.mesh.position.addScaledVector(p.velocity, delta);
+      p.mesh.scale.setScalar(p.life);
+      p.mesh.rotation.x += 0.1;
+      p.mesh.rotation.y += 0.15;
+    }
   }
 
-  // ---------------------------------------------------------------------
-  // High score persistence
-  // ---------------------------------------------------------------------
-  function loadHighScore() {
-    const raw = localStorage.getItem(HIGH_SCORE_KEY);
-    const parsed = parseInt(raw, 10);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  function saveHighScore(value) {
-    localStorage.setItem(HIGH_SCORE_KEY, String(value));
-  }
-
-  // ---------------------------------------------------------------------
-  // Game state
-  // ---------------------------------------------------------------------
-  let difficulty = 'normal';
-  let state = null;
+  // --------------------------------------------------------------------------
+  // Game State & Loop
+  // --------------------------------------------------------------------------
+  let gameState = null;
   let lastTickTime = 0;
   let animationFrameId = null;
+  let lastFrameTime = performance.now();
+
+  const SPEEDS = {
+    easy: 150,
+    normal: 105,
+    blitz: 70
+  };
+  let currentDifficulty = 'normal';
 
   function initGame() {
-    const highScore = loadHighScore();
-    state = Engine.createGameState({
+    const savedHighScore = parseInt(localStorage.getItem('snake_3d_high_score') || '0', 10);
+    highScoreVal.textContent = savedHighScore;
+
+    gameState = SnakeEngine.createGameState({
       width: GRID_SIZE,
       height: GRID_SIZE,
-      highScore,
-      difficulty,
-      baseSpeed: DIFFICULTY_SPEEDS[difficulty]
+      highScore: savedHighScore,
+      difficulty: currentDifficulty,
+      baseSpeed: SPEEDS[currentDifficulty]
     });
+
+    // Reset 3D visuals
+    snakeMeshes.forEach(m => scene.remove(m));
+    snakeMeshes = [];
+    if (foodMesh) { scene.remove(foodMesh); foodMesh = null; }
+    particles.forEach(p => scene.remove(p.mesh));
     particles = [];
 
-    updateHud();
-    hideGameOver();
-    setPaused(false);
+    updateScoreDisplay();
+    updateSnake3D(gameState.snake, gameState.direction);
+    spawnFood3D(gameState.food);
+
+    gameOverModal.hidden = true;
+    pauseOverlay.hidden = true;
     freezeIndicator.hidden = true;
 
     lastTickTime = performance.now();
-    if (animationFrameId) {
-      cancelAnimationFrame(animationFrameId);
-    }
-    animationFrameId = requestAnimationFrame(gameLoop);
+    lastFrameTime = performance.now();
   }
 
-  function updateHud() {
-    scoreEl.textContent = state.score;
-    highScoreEl.textContent = state.highScore;
-  }
-
-  // ---------------------------------------------------------------------
-  // Rendering
-  // ---------------------------------------------------------------------
-  function drawGrid() {
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= canvas.width; i += TILE_SIZE) {
-      ctx.beginPath();
-      ctx.moveTo(i, 0);
-      ctx.lineTo(i, canvas.height);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(0, i);
-      ctx.lineTo(canvas.width, i);
-      ctx.stroke();
-    }
-  }
-
-  function drawFood() {
-    const food = state.food;
-    if (!food) return;
-
-    const cx = food.x * TILE_SIZE + TILE_SIZE / 2;
-    const cy = food.y * TILE_SIZE + TILE_SIZE / 2;
-    const radius = TILE_SIZE / 2 - 2;
-    const pulse = 1 + Math.sin(performance.now() / 180) * 0.08;
-
-    ctx.save();
-    ctx.shadowColor = food.color;
-    ctx.shadowBlur = food.type === 'golden' ? 22 : 16;
-    ctx.fillStyle = food.color;
-    ctx.beginPath();
-    ctx.arc(cx, cy, Math.max(2, radius * pulse), 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(cx - radius * 0.3, cy - radius * 0.3, radius * 0.32, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function drawRoundedRect(x, y, width, height, radius) {
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
-  }
-
-  // Cute directional eyes on the snake's head
-  function drawEyes(x, y, size, direction) {
-    const cx = x + size / 2;
-    const cy = y + size / 2;
-    const forward = size * 0.18;
-    const spread = size * 0.22;
-    const eyeRadius = Math.max(1.6, size * 0.15);
-    const pupilRadius = eyeRadius * 0.5;
-
-    let leftEye;
-    let rightEye;
-
-    if (direction.x === 1) {
-      leftEye = { x: cx + forward, y: cy - spread };
-      rightEye = { x: cx + forward, y: cy + spread };
-    } else if (direction.x === -1) {
-      leftEye = { x: cx - forward, y: cy - spread };
-      rightEye = { x: cx - forward, y: cy + spread };
-    } else if (direction.y === 1) {
-      leftEye = { x: cx - spread, y: cy + forward };
-      rightEye = { x: cx + spread, y: cy + forward };
-    } else {
-      leftEye = { x: cx - spread, y: cy - forward };
-      rightEye = { x: cx + spread, y: cy - forward };
-    }
-
-    [leftEye, rightEye].forEach((eye) => {
-      // White sclera
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(eye.x, eye.y, eyeRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Dark pupil, nudged slightly toward travel direction for a lively look
-      ctx.fillStyle = '#05060a';
-      ctx.beginPath();
-      ctx.arc(eye.x + direction.x * pupilRadius * 0.4, eye.y + direction.y * pupilRadius * 0.4, pupilRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Tiny highlight for sparkle
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.beginPath();
-      ctx.arc(eye.x - pupilRadius * 0.4, eye.y - pupilRadius * 0.4, pupilRadius * 0.35, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }
-
-  function drawSnake() {
-    const snake = state.snake;
-    const isFrozen = Boolean(state.activeEffect && state.activeEffect.type === 'freeze');
-
-    snake.forEach((segment, index) => {
-      const x = segment.x * TILE_SIZE;
-      const y = segment.y * TILE_SIZE;
-      const size = TILE_SIZE - 2;
-      const offset = 1;
-
-      ctx.save();
-      if (index === 0) {
-        ctx.fillStyle = isFrozen ? '#8be9ff' : '#00f6ff';
-        ctx.shadowColor = isFrozen ? '#8be9ff' : '#00f6ff';
-        ctx.shadowBlur = 14;
-
-        drawRoundedRect(x + offset, y + offset, size, size, 5);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        drawEyes(x + offset, y + offset, size, state.direction);
-      } else {
-        const progress = index / snake.length;
-        ctx.fillStyle = index % 2 === 0 ? '#00e1ff' : '#39ff88';
-        ctx.shadowColor = '#00f6ff';
-        ctx.shadowBlur = Math.max(0, 8 * (1 - progress));
-
-        drawRoundedRect(x + offset, y + offset, size, size, 4);
-        ctx.fill();
-      }
-      ctx.restore();
-    });
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGrid();
-    drawFood();
-    drawSnake();
-    drawParticles();
-  }
-
-  // ---------------------------------------------------------------------
-  // Game loop
-  // ---------------------------------------------------------------------
-  function handleTickResult(result) {
-    if (result.gameOver) {
-      Audio.playCrash();
-      triggerGameOver();
-      return;
-    }
-
-    if (result.ateFood) {
-      const food = result.foodEaten;
-      const cx = result.head.x * TILE_SIZE + TILE_SIZE / 2;
-      const cy = result.head.y * TILE_SIZE + TILE_SIZE / 2;
-
-      spawnParticles(cx, cy, food.color, food.type === 'golden' ? 26 : 16);
-
-      if (food.type === 'golden') {
-        Audio.playGolden();
-      } else if (food.type === 'freeze') {
-        Audio.playFreeze();
-      } else {
-        Audio.playEat();
-      }
-
-      if (state.score > state.highScore) {
-        state.highScore = state.score;
-      }
-      saveHighScore(state.highScore);
-      updateHud();
-    }
-
-    freezeIndicator.hidden = !(state.activeEffect && state.activeEffect.type === 'freeze');
-  }
-
-  function gameLoop(timestamp) {
-    if (state.isGameOver) return;
-
-    if (!state.isPaused) {
-      const elapsed = timestamp - lastTickTime;
-      if (elapsed >= state.currentSpeed) {
-        lastTickTime = timestamp - (elapsed % state.currentSpeed);
-        const result = Engine.tick(state, Date.now());
-        handleTickResult(result);
-      }
-      updateParticles();
-    }
-
-    draw();
-
-    if (!state.isGameOver) {
-      animationFrameId = requestAnimationFrame(gameLoop);
-    }
-  }
-
-  // ---------------------------------------------------------------------
-  // Pause / mute / game-over UI
-  // ---------------------------------------------------------------------
-  function setPaused(paused) {
-    state.isPaused = paused;
-    pauseBtn.setAttribute('aria-pressed', String(paused));
-    pauseOverlay.hidden = !paused;
-  }
-
-  function togglePause() {
-    if (state.isGameOver) return;
-    Audio.ensureContext();
-    setPaused(!state.isPaused);
+  function updateScoreDisplay() {
+    scoreVal.textContent = gameState.score;
+    highScoreVal.textContent = gameState.highScore;
   }
 
   function triggerGameOver() {
-    if (animationFrameId) {
-      cancelAnimationFrame(animationFrameId);
-      animationFrameId = null;
+    SoundFX.crash();
+    gameOverModal.hidden = false;
+    finalScoreEl.textContent = gameState.score;
+
+    const previousBest = parseInt(localStorage.getItem('snake_3d_high_score') || '0', 10);
+    if (gameState.score > previousBest && gameState.score > 0) {
+      newBestTag.hidden = false;
+      localStorage.setItem('snake_3d_high_score', gameState.score);
+    } else {
+      newBestTag.hidden = true;
+    }
+  }
+
+  function gameLoop(now) {
+    animationFrameId = requestAnimationFrame(gameLoop);
+
+    const delta = (now - lastFrameTime) / 1000;
+    lastFrameTime = now;
+
+    // Rotate & bob 3D food
+    if (foodMesh) {
+      foodMesh.rotation.y += 2.0 * delta;
+      foodMesh.rotation.x += 0.8 * delta;
+      foodMesh.position.y = 0.45 + Math.sin(now * 0.005) * 0.12;
     }
 
-    finalScoreEl.textContent = state.score;
-    newBestTag.hidden = !(state.score > 0 && state.score >= state.highScore);
+    // Update 3D particles
+    updateParticles(delta);
 
-    showGameOver();
+    // Dynamic Camera Follow mode
+    if (cameraMode === 'follow' && gameState && gameState.snake.length > 0) {
+      const head = gridToWorld(gameState.snake[0].x, gameState.snake[0].y);
+      camera.position.x += (head.x - camera.position.x) * 0.05;
+      camera.position.z += (head.z + 14 - camera.position.z) * 0.05;
+      camera.lookAt(head.x, 0, head.z);
+    }
+
+    // Tick core engine if not paused or over
+    if (gameState && !gameState.isPaused && !gameState.isGameOver) {
+      const elapsed = now - lastTickTime;
+      if (elapsed >= gameState.currentSpeed) {
+        lastTickTime = now;
+        const tickResult = SnakeEngine.tick(gameState, now);
+
+        if (tickResult.gameOver) {
+          triggerGameOver();
+        } else if (tickResult.moved) {
+          updateSnake3D(gameState.snake, gameState.direction);
+
+          if (tickResult.ateFood) {
+            updateScoreDisplay();
+            const food = tickResult.foodEaten;
+            const wPos = gridToWorld(food.x, food.y);
+
+            if (food.type === 'golden') {
+              SoundFX.golden();
+              create3DParticles(wPos.x, wPos.z, 0xffd700, 30);
+            } else if (food.type === 'freeze') {
+              SoundFX.freeze();
+              create3DParticles(wPos.x, wPos.z, 0x00bfff, 25);
+            } else {
+              SoundFX.eat();
+              create3DParticles(wPos.x, wPos.z, 0xff2d55, 18);
+            }
+
+            spawnFood3D(gameState.food);
+          }
+        }
+
+        // Toggle freeze indicator
+        freezeIndicator.hidden = !gameState.activeEffect;
+      }
+    }
+
+    // Render WebGL frame
+    renderer.render(scene, camera);
   }
 
-  function showGameOver() {
-    gameOverOverlay.classList.add('visible');
+  // --------------------------------------------------------------------------
+  // Complete Button Wiring & Interaction Handlers
+  // --------------------------------------------------------------------------
+  function setDifficulty(diff) {
+    if (!SPEEDS[diff]) return;
+    currentDifficulty = diff;
+    diffButtons.forEach(b => {
+      b.classList.toggle('active', b.dataset.difficulty === diff);
+    });
+    if (gameState && !gameState.isGameOver) {
+      gameState.difficulty = diff;
+      gameState.baseSpeed = SPEEDS[diff];
+      if (!gameState.activeEffect) {
+        gameState.currentSpeed = SPEEDS[diff];
+      }
+    }
   }
 
-  function hideGameOver() {
-    gameOverOverlay.classList.remove('visible', 'show');
+  function togglePause() {
+    if (!gameState || gameState.isGameOver) return;
+    gameState.isPaused = !gameState.isPaused;
+    pauseOverlay.hidden = !gameState.isPaused;
+    pauseBtn.setAttribute('aria-pressed', String(gameState.isPaused));
+    pauseBtn.querySelector('.icon-pause').hidden = gameState.isPaused;
+    pauseBtn.querySelector('.icon-play').hidden = !gameState.isPaused;
   }
 
-  function setDifficulty(next) {
-    if (!DIFFICULTY_SPEEDS[next]) return;
-    difficulty = next;
+  function handleDirectionInput(dirStr) {
+    if (!gameState || gameState.isPaused || gameState.isGameOver) return;
+    const dirMap = {
+      up: SnakeEngine.DIRECTIONS.UP,
+      down: SnakeEngine.DIRECTIONS.DOWN,
+      left: SnakeEngine.DIRECTIONS.LEFT,
+      right: SnakeEngine.DIRECTIONS.RIGHT
+    };
+    if (dirMap[dirStr]) {
+      SnakeEngine.changeDirection(gameState, dirMap[dirStr]);
+    }
+  }
 
-    diffButtons.forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.difficulty === difficulty);
+  function initControls() {
+    // Difficulty Buttons
+    diffButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setDifficulty(btn.dataset.difficulty);
+      });
     });
 
-    initGame();
-  }
-
-  // ---------------------------------------------------------------------
-  // Input handling
-  // ---------------------------------------------------------------------
-  function attemptDirectionChange(dir) {
-    Audio.ensureContext();
-    Engine.changeDirection(state, dir);
-  }
-
-  const KEY_DIRECTIONS = {
-    ArrowUp: DIRECTIONS.UP,
-    w: DIRECTIONS.UP,
-    W: DIRECTIONS.UP,
-    ArrowDown: DIRECTIONS.DOWN,
-    s: DIRECTIONS.DOWN,
-    S: DIRECTIONS.DOWN,
-    ArrowLeft: DIRECTIONS.LEFT,
-    a: DIRECTIONS.LEFT,
-    A: DIRECTIONS.LEFT,
-    ArrowRight: DIRECTIONS.RIGHT,
-    d: DIRECTIONS.RIGHT,
-    D: DIRECTIONS.RIGHT
-  };
-
-  window.addEventListener('keydown', (e) => {
-    const key = e.key;
-
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(key)) {
+    // Mute Button
+    muteBtn.addEventListener('click', (e) => {
       e.preventDefault();
-    }
+      const muted = SoundFX.toggleMute();
+      muteBtn.setAttribute('aria-pressed', String(muted));
+      muteBtn.querySelector('.icon-on').hidden = muted;
+      muteBtn.querySelector('.icon-off').hidden = !muted;
+    });
+    // Set initial mute UI
+    const isMutedInitial = SoundFX.isMuted();
+    muteBtn.setAttribute('aria-pressed', String(isMutedInitial));
+    muteBtn.querySelector('.icon-on').hidden = isMutedInitial;
+    muteBtn.querySelector('.icon-off').hidden = !isMutedInitial;
 
-    if (state.isGameOver) {
-      if (key === ' ' || key === 'Enter') {
-        initGame();
-      }
-      return;
-    }
-
-    if (key === ' ') {
+    // Pause & Resume Buttons
+    pauseBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       togglePause();
-      return;
-    }
-
-    const dir = KEY_DIRECTIONS[key];
-    if (dir) {
-      attemptDirectionChange(dir);
-    }
-  });
-
-  dpadButtons.forEach((btn) => {
-    const dir = DIRECTIONS[btn.dataset.dir.toUpperCase()];
-    const activate = (e) => {
+    });
+    resumeBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      if (state.isGameOver) return;
-      attemptDirectionChange(dir);
-    };
-    btn.addEventListener('pointerdown', activate);
-  });
+      togglePause();
+    });
 
-  restartBtn.addEventListener('click', () => {
-    Audio.ensureContext();
-    initGame();
-  });
+    // Camera Switch Button
+    cameraBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      setCameraView(cameraMode === 'isometric' ? 'follow' : 'isometric');
+    });
 
-  muteBtn.addEventListener('click', () => {
-    const muted = Audio.toggleMute();
-    muteBtn.setAttribute('aria-pressed', String(muted));
-  });
-  muteBtn.setAttribute('aria-pressed', String(Audio.isMuted()));
+    // Play Again / Restart Button
+    restartBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      initGame();
+    });
 
-  pauseBtn.addEventListener('click', togglePause);
+    // D-Pad Touch / Mouse Controls
+    dpadButtons.forEach(btn => {
+      const dir = btn.dataset.dir;
+      if (!dir) return;
 
-  diffButtons.forEach((btn) => {
-    btn.addEventListener('click', () => setDifficulty(btn.dataset.difficulty));
-  });
+      const trigger = (e) => {
+        e.preventDefault();
+        btn.classList.add('pressed');
+        handleDirectionInput(dir);
+        setTimeout(() => btn.classList.remove('pressed'), 120);
+      };
 
-  // ---------------------------------------------------------------------
-  // Boot
-  // ---------------------------------------------------------------------
+      btn.addEventListener('pointerdown', trigger);
+    });
+
+    // Desktop Keyboard Controls
+    window.addEventListener('keydown', (e) => {
+      // Prevent scrolling on arrow keys or space
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+        e.preventDefault();
+      }
+
+      switch (e.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          handleDirectionInput('up');
+          break;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          handleDirectionInput('down');
+          break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          handleDirectionInput('left');
+          break;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          handleDirectionInput('right');
+          break;
+        case ' ':
+        case 'p':
+        case 'P':
+          togglePause();
+          break;
+        case 'r':
+        case 'R':
+          if (gameState && gameState.isGameOver) {
+            initGame();
+          }
+          break;
+        case 'm':
+        case 'M':
+          muteBtn.click();
+          break;
+        case 'c':
+        case 'C':
+          cameraBtn.click();
+          break;
+      }
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // Start
+  // --------------------------------------------------------------------------
   function start() {
-    const activeBtn = diffButtons.find((b) => b.classList.contains('active'));
-    difficulty = activeBtn ? activeBtn.dataset.difficulty : 'normal';
+    initThree();
+    initControls();
     initGame();
+    animationFrameId = requestAnimationFrame(gameLoop);
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {

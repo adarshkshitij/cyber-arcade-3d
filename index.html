@@ -3,72 +3,102 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Neon Snake Game</title>
+  <title>3D Neon Snake Arcade</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- Three.js WebGL 3D Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
   <div class="arcade-shell">
-    <h1 class="title">Neon Snake</h1>
+    <header class="game-header">
+      <h1 class="title">3D Neon Snake</h1>
+      <span class="version-tag">WebGL 3D Edition</span>
+    </header>
 
+    <!-- Glassmorphism 3D HUD -->
     <div class="hud">
       <div class="hud-badges">
-        <div class="badge badge-score" id="score">
+        <div class="badge badge-score" id="scoreBadge">
           <span class="badge-label">Score</span>
-          <span class="badge-value">0</span>
+          <span class="badge-value" id="score">0</span>
         </div>
-        <div class="badge badge-high">
+        <div class="badge badge-high" id="highScoreBadge">
           <span class="badge-label">Best</span>
           <span class="badge-value" id="highScore">0</span>
         </div>
       </div>
 
       <div class="hud-controls">
-        <div class="difficulty-group" role="group" aria-label="Difficulty">
-          <button class="diff-btn" data-difficulty="easy">Easy</button>
-          <button class="diff-btn active" data-difficulty="normal">Normal</button>
-          <button class="diff-btn" data-difficulty="blitz">Blitz</button>
+        <!-- Difficulty Selection Buttons -->
+        <div class="difficulty-group" role="group" aria-label="Game Difficulty">
+          <button class="diff-btn" id="diffEasy" data-difficulty="easy" type="button">Easy</button>
+          <button class="diff-btn active" id="diffNormal" data-difficulty="normal" type="button">Normal</button>
+          <button class="diff-btn" id="diffBlitz" data-difficulty="blitz" type="button">Blitz</button>
         </div>
 
+        <!-- Audio and Pause Icon Buttons -->
         <div class="icon-controls">
-          <button id="muteBtn" class="icon-btn" type="button" aria-label="Mute sound" aria-pressed="false">
+          <button id="muteBtn" class="icon-btn" type="button" aria-label="Toggle Sound" aria-pressed="false" title="Toggle Sound (M)">
             <span class="icon-on">🔊</span>
-            <span class="icon-off">🔇</span>
+            <span class="icon-off" hidden>🔇</span>
           </button>
-          <button id="pauseBtn" class="icon-btn" type="button" aria-label="Pause game" aria-pressed="false">
-            <span class="icon-play">▶</span>
+          <button id="pauseBtn" class="icon-btn" type="button" aria-label="Pause Game" aria-pressed="false" title="Pause / Resume (Space)">
             <span class="icon-pause">⏸</span>
+            <span class="icon-play" hidden>▶</span>
+          </button>
+          <button id="cameraBtn" class="icon-btn" type="button" aria-label="Toggle Camera Angle" title="Switch 3D View (C)">
+            <span>🎥</span>
           </button>
         </div>
       </div>
     </div>
 
-    <div class="game-container">
-      <canvas id="gameCanvas" width="400" height="400"></canvas>
-      <div class="freeze-indicator" id="freezeIndicator" hidden>❄ Freeze</div>
+    <!-- 3D Game Viewport Container -->
+    <div class="game-container" id="gameContainer">
+      <div id="webglContainer"></div>
+      <div class="freeze-indicator" id="freezeIndicator" hidden>❄ FREEZE SLOW-MO</div>
       <div class="pause-overlay" id="pauseOverlay" hidden>
-        <span>Paused</span>
+        <div class="pause-card">
+          <h2>GAME PAUSED</h2>
+          <p>Press <kbd>Space</kbd> or tap Resume to continue</p>
+          <button id="resumeBtn" class="primary-btn" type="button">Resume</button>
+        </div>
       </div>
     </div>
 
-    <div class="dpad" aria-label="Touch controls">
-      <button class="dpad-btn dpad-up" data-dir="up" aria-label="Move up" type="button">▲</button>
-      <button class="dpad-btn dpad-left" data-dir="left" aria-label="Move left" type="button">◀</button>
-      <button class="dpad-btn dpad-center" aria-hidden="true" tabindex="-1"></button>
-      <button class="dpad-btn dpad-right" data-dir="right" aria-label="Move right" type="button">▶</button>
-      <button class="dpad-btn dpad-down" data-dir="down" aria-label="Move down" type="button">▼</button>
+    <!-- Responsive Tactile 3D D-Pad -->
+    <div class="dpad-container">
+      <div class="dpad" aria-label="Touch D-Pad Controls">
+        <button class="dpad-btn dpad-up" id="dpadUp" data-dir="up" aria-label="Move Up" type="button">▲</button>
+        <button class="dpad-btn dpad-left" id="dpadLeft" data-dir="left" aria-label="Move Left" type="button">◀</button>
+        <div class="dpad-center" aria-hidden="true"></div>
+        <button class="dpad-btn dpad-right" id="dpadRight" data-dir="right" aria-label="Move Right" type="button">▶</button>
+        <button class="dpad-btn dpad-down" id="dpadDown" data-dir="down" aria-label="Move Down" type="button">▼</button>
+      </div>
     </div>
 
-    <p class="hint">Arrow keys / WASD to move &bull; Space to pause</p>
+    <footer class="game-footer">
+      <p class="hint">Use <kbd>Arrow Keys</kbd> or <kbd>W A S D</kbd> to steer &bull; <kbd>Space</kbd> to Pause &bull; <kbd>R</kbd> to Restart</p>
+    </footer>
   </div>
 
-  <div id="gameOver">
-    <h2>Game Over</h2>
-    <p>Final Score: <span id="finalScore">0</span></p>
-    <p class="new-best" id="newBestTag" hidden>🏆 New Best!</p>
-    <button id="restartBtn">Play Again</button>
+  <!-- Game Over Modal -->
+  <div id="gameOver" class="modal-backdrop" hidden>
+    <div class="modal-card">
+      <h2 class="game-over-title">GAME OVER</h2>
+      <div class="final-stats">
+        <p>Final Score: <span id="finalScore" class="stat-highlight">0</span></p>
+        <p class="new-best" id="newBestTag" hidden>🏆 NEW HIGH SCORE!</p>
+      </div>
+      <div class="modal-actions">
+        <button id="restartBtn" class="primary-btn pulse-glow" type="button">Play Again (R)</button>
+      </div>
+    </div>
   </div>
 
+  <!-- Core deterministic engine -->
   <script src="engine.js"></script>
+  <!-- 3D WebGL game loop and UI controller -->
   <script src="game.js"></script>
 </body>
 </html>
