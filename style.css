@@ -1,0 +1,263 @@
+/* ==========================================================================
+   Snake Game — Dark / Neon / Glassmorphism theme
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-deep: #05060a;
+  --bg-glow-1: #0f2a3d;
+  --bg-glow-2: #2a0f3d;
+
+  --neon-cyan: #00f6ff;
+  --neon-pink: #ff2ee6;
+  --neon-green: #39ff88;
+  --neon-purple: #8a2eff;
+
+  --glass-bg: rgba(20, 24, 38, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.06);
+
+  --text-primary: #eafcff;
+  --text-muted: #93a4b8;
+
+  --font-display: 'Orbitron', 'Segoe UI', sans-serif;
+  --font-body: 'Rajdhani', 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 20% 20%, var(--bg-glow-1) 0%, transparent 45%),
+    radial-gradient(circle at 80% 80%, var(--bg-glow-2) 0%, transparent 45%),
+    var(--bg-deep);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+/* Faint scanline / grid texture over the dark background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  z-index: 0;
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-primary);
+  text-shadow:
+    0 0 6px rgba(0, 246, 255, 0.8),
+    0 0 18px rgba(0, 246, 255, 0.5),
+    0 0 40px rgba(138, 46, 255, 0.35);
+  z-index: 1;
+}
+
+/* ==========================================================================
+   Game container — glassmorphism card that centers the canvas
+   ========================================================================== */
+
+.game-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2rem;
+  border-radius: 24px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 40px rgba(0, 246, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* ==========================================================================
+   Score
+   ========================================================================== */
+
+#score {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.6rem 1.5rem;
+  border-radius: 999px;
+  color: var(--neon-green);
+  background: rgba(57, 255, 136, 0.08);
+  border: 1px solid rgba(57, 255, 136, 0.35);
+  box-shadow:
+    0 0 12px rgba(57, 255, 136, 0.35),
+    inset 0 0 10px rgba(57, 255, 136, 0.08);
+  text-shadow: 0 0 8px rgba(57, 255, 136, 0.8);
+}
+
+/* ==========================================================================
+   Canvas — centered, neon-framed
+   ========================================================================== */
+
+canvas {
+  display: block;
+  margin: 0 auto;
+  border-radius: 16px;
+  background: #0a0d16;
+  border: 2px solid rgba(0, 246, 255, 0.4);
+  box-shadow:
+    0 0 20px rgba(0, 246, 255, 0.35),
+    0 0 60px rgba(138, 46, 255, 0.2),
+    inset 0 0 30px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================================================
+   Game Over overlay — hidden by default
+   ========================================================================== */
+
+#gameOver {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: center;
+  padding: 2.5rem 3rem;
+  margin: auto;
+  width: min(90vw, 380px);
+  height: fit-content;
+  border-radius: 24px;
+  background: rgba(10, 8, 20, 0.55);
+  border: 1px solid rgba(255, 46, 230, 0.4);
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(255, 46, 230, 0.35),
+    inset 0 1px 0 var(--glass-highlight);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  animation: gameOverIn 0.35s ease-out;
+}
+
+#gameOver.visible,
+#gameOver.show {
+  display: flex;
+}
+
+#gameOver h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--neon-pink);
+  text-shadow:
+    0 0 8px rgba(255, 46, 230, 0.9),
+    0 0 24px rgba(255, 46, 230, 0.6);
+}
+
+#gameOver p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+#gameOver button {
+  margin-top: 0.5rem;
+  padding: 0.7rem 2rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bg-deep);
+  background: var(--neon-cyan);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow:
+    0 0 16px rgba(0, 246, 255, 0.6),
+    0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#gameOver button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 24px rgba(0, 246, 255, 0.85),
+    0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+#gameOver button:active {
+  transform: translateY(0);
+}
+
+@keyframes gameOverIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ==========================================================================
+   Responsive tweaks
+   ========================================================================== */
+
+@media (max-width: 480px) {
+  .game-container {
+    padding: 1.25rem;
+    border-radius: 18px;
+  }
+
+  #score {
+    font-size: 1rem;
+    padding: 0.5rem 1.1rem;
+  }
+
+  #gameOver {
+    padding: 2rem 1.5rem;
+  }
+
+  #gameOver h2 {
+    font-size: 1.5rem;
+  }
+}
