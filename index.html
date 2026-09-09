@@ -64,6 +64,14 @@
           <span id="currentModeLabel">Classic</span>
         </button>
 
+        <!-- Cyber Garage Vehicle Selector - shown only in Racer mode
+             (pure CSS via .arcade-shell:has(#tabRacer.active) #vehicleGroup) -->
+        <div class="vehicle-group" id="vehicleGroup" role="group" aria-label="Select Vehicle">
+          <button class="vehicle-btn active" id="vehicleInterceptor" data-vehicle="interceptor" type="button" title="Interceptor - Balanced all-rounder">🏎️</button>
+          <button class="vehicle-btn" id="vehicleSpeeder" data-vehicle="speeder" type="button" title="Speeder - +20 km/h, high handling">⚡</button>
+          <button class="vehicle-btn" id="vehicleTitan" data-vehicle="titan" type="button" title="Titan - -10 km/h, 1.4x nitro duration">🛡️</button>
+        </div>
+
         <!-- Audio, Pause, Camera, and Fullscreen Buttons -->
         <div class="icon-controls">
           <button id="muteBtn" class="icon-btn" type="button" aria-label="Toggle Sound" aria-pressed="false" title="Toggle Sound (M)">
