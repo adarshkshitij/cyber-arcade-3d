@@ -1,13 +1,13 @@
 {
   "name": "3d-neon-snake-arcade",
   "version": "1.1.0",
-  "description": "Hardware-accelerated 3D WebGL cyberpunk arcade snake game with Web Audio synth and E2E tests",
+  "description": "Cyberpunk 3D WebGL Arcade: Neon Snake & Turbo Highway Racer with Web Audio synth and E2E tests",
   "main": "game.js",
   "scripts": {
     "dev": "python3 -m http.server 8000",
-    "check": "node --check engine.js && node --check game.js",
+    "check": "node --check engine.js && node --check racer-engine.js && node --check game.js",
     "test": "node --test test/*.test.js",
-    "test:unit": "node --test test/engine.test.js test/modes.test.js test/ui_and_buttons.test.js",
+    "test:unit": "node --test test/engine.test.js test/modes.test.js test/racer_engine.test.js test/ui_and_buttons.test.js",
     "test:e2e": "node --test test/e2e_browser.test.js",
     "prepush": "bash scripts/pre-push.sh",
     "coderabbit:review": "bash scripts/coderabbit-check.sh",
@@ -19,6 +19,8 @@
   },
   "keywords": [
     "snake",
+    "car-racing",
+    "cyberpunk",
     "webgl",
     "threejs",
     "arcade",

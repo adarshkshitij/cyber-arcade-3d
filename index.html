@@ -11,20 +11,38 @@
 <body>
   <div class="arcade-shell">
     <header class="game-header">
-      <h1 class="title">3D Neon Snake</h1>
-      <span class="version-tag">WebGL 3D</span>
+      <h1 class="title" id="arcadeTitle">3D Neon Snake</h1>
+      <span class="version-tag" id="arcadeBadge">WebGL 3D</span>
     </header>
+
+    <!-- Cyberpunk Arcade Game Switcher -->
+    <div class="arcade-nav" role="tablist" aria-label="Select Game">
+      <button id="tabSnake" class="arcade-tab-btn active" role="tab" aria-selected="true" type="button">
+        <span class="tab-icon">🐍</span> 3D Neon Snake
+      </button>
+      <button id="tabRacer" class="arcade-tab-btn" role="tab" aria-selected="false" type="button">
+        <span class="tab-icon">🏎️</span> 3D Cyber Racer
+      </button>
+    </div>
 
     <!-- Glassmorphism 3D HUD -->
     <div class="hud">
       <div class="hud-badges">
         <div class="badge badge-score" id="scoreBadge">
-          <span class="badge-label">Score</span>
+          <span class="badge-label" id="scoreLabel">Score</span>
           <span class="badge-value" id="score">0</span>
         </div>
         <div class="badge badge-high" id="highScoreBadge">
           <span class="badge-label">Best</span>
           <span class="badge-value" id="highScore">0</span>
+        </div>
+        <div class="badge badge-speed" id="speedBadge" hidden>
+          <span class="badge-label">Speed</span>
+          <span class="badge-value" id="speedVal">120 <small>km/h</small></span>
+        </div>
+        <div class="badge badge-nitro" id="nitroBadge" hidden>
+          <span class="badge-label">Nitro</span>
+          <div class="nitro-meter"><div class="nitro-fill" id="nitroFill" style="width: 50%"></div></div>
         </div>
       </div>
 
@@ -100,14 +118,14 @@
       <div class="dpad" aria-label="Touch D-Pad Controls">
         <button class="dpad-btn dpad-up" id="dpadUp" data-dir="up" aria-label="Move Up" type="button">▲</button>
         <button class="dpad-btn dpad-left" id="dpadLeft" data-dir="left" aria-label="Move Left" type="button">◀</button>
-        <div class="dpad-center" aria-hidden="true"></div>
+        <button class="dpad-btn dpad-center-btn" id="dpadNitro" data-action="nitro" aria-label="Nitro Boost" type="button" title="Nitro Boost">⚡</button>
         <button class="dpad-btn dpad-right" id="dpadRight" data-dir="right" aria-label="Move Right" type="button">▶</button>
         <button class="dpad-btn dpad-down" id="dpadDown" data-dir="down" aria-label="Move Down" type="button">▼</button>
       </div>
     </div>
 
     <footer class="game-footer">
-      <p class="hint">Use <kbd>Arrow Keys</kbd> or <kbd>W A S D</kbd> to steer &bull; <kbd>Space</kbd> to Pause &bull; <kbd>L</kbd> for Modes &bull; <kbd>R</kbd> to Restart</p>
+      <p class="hint" id="gameHint">Use <kbd>Arrow Keys</kbd> or <kbd>W A S D</kbd> to steer &bull; <kbd>Space</kbd> to Pause &bull; <kbd>L</kbd> for Modes &bull; <kbd>R</kbd> to Restart</p>
     </footer>
   </div>
 
@@ -174,8 +192,9 @@
     </div>
   </div>
 
-  <!-- Core deterministic engine -->
+  <!-- Core deterministic engines -->
   <script src="engine.js"></script>
+  <script src="racer-engine.js"></script>
   <!-- 3D WebGL game loop and UI controller -->
   <script src="game.js"></script>
 </body>

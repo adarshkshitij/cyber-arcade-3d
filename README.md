@@ -1,4 +1,4 @@
-# 🐍 3D Neon Snake Arcade
+# 🕹️ 3D Cyberpunk Arcade: Neon Snake & Turbo Highway Racer
 
 <div align="center">
 
@@ -7,86 +7,91 @@
 [![AWS S3 + CloudFront](https://img.shields.io/badge/AWS-S3%20%2B%20CloudFront%20Ready-FF9900.svg?logo=amazon-aws)](AWS_DEPLOYMENT_GUIDE.md)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg?logo=docker)](Dockerfile)
 [![CodeRabbit Review](https://img.shields.io/badge/CodeRabbit-AI%20Reviewed-ffd700.svg)](CODERABBIT_REVIEW.md)
+[![Tests Passing](https://img.shields.io/badge/Tests-31%2F31%20Passing-00ffaa.svg)](test/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ffaa.svg)](LICENSE)
 
-**A hardware-accelerated 3D WebGL cyberpunk arcade snake game with real-time dynamic lighting, procedural 8-bit sound synthesis, and volumetric particle physics.**
+**A hardware-accelerated 3D WebGL cyberpunk arcade cabinet featuring Neon Snake and Turbo Highway Racer with real-time dynamic lighting, procedural 8-bit sound synthesis, and responsive widescreen controls.**
 
 [🎮 Play Live Demo](https://adarshkshitij.github.io/snake-game) &bull; [☁️ AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md) &bull; [📖 Architecture](#architecture) &bull; [🚀 Quick Start](#quick-start) &bull; [🐇 CodeRabbit Audit](CODERABBIT_REVIEW.md)
 
 <br/>
 
-<img src="game_verified.png" alt="3D Neon Snake Arcade Gameplay" width="750" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(0,255,170,0.3); border: 2px solid #00ffaa;" />
+<img src="docs/multi_game_hub.png" alt="3D Neon Snake Arcade Gameplay" width="750" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(0,255,170,0.3); border: 2px solid #00ffaa;" />
+
+<br/><br/>
+
+<img src="docs/racer_gameplay.png" alt="3D Cyber Highway Racer Gameplay" width="750" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(255,0,85,0.3); border: 2px solid #ff0055;" />
 
 </div>
 
 ---
 
-## 🌟 Highlights & Features
+### 🏷️ Recommended GitHub Repository Topics & Tags
+`threejs` &bull; `webgl-3d` &bull; `arcade-game` &bull; `cyberpunk` &bull; `snake-3d` &bull; `car-racing` &bull; `retro-gaming` &bull; `docker` &bull; `aws-s3` &bull; `cloudfront` &bull; `devops` &bull; `coderabbit`
 
-- **🎮 Hardware-Accelerated 3D (Three.js r128)**: 
-  - Rendered in full perspective 3D with customizable isometric overview or dynamic snake follow-cam (`C` key / 🎥 button).
-  - Tilted metallic arena floor with glowing neon perimeter walls and shadow casting.
-  - Segmented snake body with directional 3D eyes on the head.
-- **🕹️ 4 Unique Arcade Game Modes & 3D Levels**:
-  - 🟢 **Classic Matrix**: Solid neon walls, classic boundary collision, retro cyberpunk green theme (`1x PTS`).
-  - 🟣 **Cosmic Portal Warp**: Border wrap-around physics (exiting left teleports to right) with glowing portal beacons and cosmic purple nebula theme (`1x PTS`).
-  - 🟠 **Labyrinth Monoliths**: Symmetrically placed glowing obsidian hazard pillars with red alert lighting (`1.5x PTS`).
-  - ⚡ **Hyper Speed Demon**: Accelerating speed on every bite, motion trail particles, and high-velocity gameplay (`2x PTS`).
-- **💡 Dynamic Point-Light Tracking**:
-  - A real-time point light is physically mounted to the snake head, adapting dynamically to the active arena theme (neon green, violet, molten amber, or electric cyan).
-- **🎵 Zero-Asset Procedural Web Audio**:
-  - Pure Web Audio API oscillator synthesis generating authentic retro sounds (eating chime, golden sparkle, freeze swoosh, **portal warp warble**, **monolith crash**, and game over).
-  - One-click mute toggle (`M` key / 🔊 button) with persistent localStorage state.
-- **✨ Volumetric 3D Particle Engine**:
-  - Consuming food triggers physics-driven bursts of 3D cubes with gravity and decay, color-coded to food and warp events.
-- **🍎 Multi-Tier Power-Up State Machine**:
-  - **Normal Apple** (`+10 pts`): Standard growth.
-  - **Golden Gem** (`+50 pts`): Double growth burst and bonus chime.
-  - **Freeze Ice Cube** (`+25 pts`): Slow-motion time dilation for 5 seconds.
-- **📱 Tactile Touch D-Pad & Keyboard Controls**:
-  - Fully responsive on-screen 3D push D-pad with pointer event binding for mobile/touch screens.
-  - Desktop support for Arrow Keys, `W A S D`, `Space` to Pause, `L` for Level/Mode select, `R` to Restart, and `M` to Mute.
-- **🧪 100% Automated Test Coverage (22 Tests Passing)**:
-  - 22 automated tests covering deterministic physics, boundary conditions, reversal prevention, **portal wrap-around math, obstacle hazard collisions, speed scaling**, and **headless Google Chrome E2E browser rendering**.
+---
+
+## 🌟 Highlights & Arcade Features
+
+### 🕹️ Multi-Game Arcade Switcher
+- **Instant Game Switching**: One-click arcade tab navigation between **🐍 3D Neon Snake** and **🏎️ 3D Cyber Racer** within the same responsive WebGL cabinet.
+- **Deep-Link URL Hash Support**: Open `/#racer` to immediately boot into Cyber Highway Racer mode or default for Snake.
+- **Responsive Widescreen Cabinet**: Scales up to 820px on desktop with native Fullscreen API support (`F` key / `⛶` button).
+
+### 🏎️ 3D Cyber Highway Racer (`racer-engine.js`)
+- **3D Outrun Highway**: Infinite neon-lit asphalt highway with scrolling dashed lane stripes, roadside neon pillars, and dual-tone laser guardrails.
+- **Player Cybercar**: Sleek wedge sports car with glowing headlights, illuminated cockpit, taillight streaks, and tire steering animations.
+- **High-Speed Traffic Dodging**: Oncoming cyberpunk vehicles across 3 lanes (Left, Center, Right) with randomized colors and velocities.
+- **Nitro Boost & Telemetry HUD**: Real-time speedometer (km/h) and gradient nitro meter. Collect floating nitro capsules to trigger high-velocity boost with camera zoom and particle trails!
+- **Procedural Engine Acoustics**: Web Audio synthesis for engine revs, tire swerving, nitro burst chimes, and crash explosions.
+
+### 🐍 3D Neon Snake (`engine.js`)
+- **4 Unique Game Modes**:
+  - 🟢 **Classic Matrix**: Solid neon walls with classic collision mechanics (`1x PTS`).
+  - 🟣 **Cosmic Portal Warp**: Boundary wrap-around physics (left edge warps to right) with portal gate beacons (`1x PTS`).
+  - 🟠 **Labyrinth Monoliths**: Symmetrically placed glowing obsidian hazard pillars (`1.5x PTS`).
+  - ⚡ **Hyper Speed Demon**: Progressive speed acceleration on every food item consumed (`2x PTS`).
+- **Dynamic Headlight Tracking**: Point light physically mounted to the snake head adapting dynamically to the active arena theme.
+- **3D Particle Physics**: Volumetric cube particle bursts on food consumption, speed warps, and collisions.
 
 ---
 
 ## 🏛 Architecture
 
-The game enforces clean decoupling between mathematical game physics and WebGL rendering, enabling headless automated testing without a browser or canvas mock:
+The arcade cabinet enforces decoupling between pure deterministic game physics and WebGL rendering, enabling headless automated testing without browser canvas mocks:
 
 ```mermaid
 flowchart TD
-    subgraph CoreEngine ["Pure Physics Engine (engine.js)"]
-        State["Deterministic Game State"]
-        Movement["Reversal-Safe Directional Buffer"]
-        Collision["Wall & Self Collision Detection"]
-        FoodSpawn["Probabilistic Power-up Spawner"]
+    subgraph CoreEngines ["Pure Deterministic Engines"]
+        SnakeEng["Snake Engine (engine.js)"]
+        RacerEng["Racer Engine (racer-engine.js)"]
     end
 
     subgraph Renderer ["3D Presentation Layer (game.js)"]
-        Scene3D["Three.js Scene & Lighting"]
-        CameraControl["Perspective & Follow Camera"]
-        MeshPool["Shared Geometry & Material Pool"]
-        AudioSynth["Web Audio Procedural Synth"]
+        Scene3D["Three.js Scene & Dual Arena Groups"]
+        CameraControl["Perspective Chase & Follow Cams"]
+        AudioSynth["Procedural Web Audio Synthesizer"]
         ParticleSystem["Volumetric 3D Particle Bursts"]
     end
 
-    subgraph Inputs ["Input Controllers"]
-        Keyboard["Desktop Keyboard (Arrows / WASD)"]
-        DPad["Touch D-Pad (pointerdown)"]
-        HUD["Difficulty / Mute / Pause Buttons"]
+    subgraph Inputs ["Adaptive Input System"]
+        ArcadeTabs["Arcade Game Switcher Tabs"]
+        Keyboard["Desktop Keyboard (Arrows / WASD / Shift)"]
+        DPad["Touch D-Pad + Nitro Button (pointerdown)"]
+        HUD["Difficulty / Mute / Pause / Fullscreen"]
     end
 
-    subgraph TestHarness ["Automated Test Suite (node:test)"]
-        UnitTests["test/engine.test.js"]
+    subgraph TestHarness ["Automated Test Suites (node:test)"]
+        SnakeTests["test/engine.test.js + test/modes.test.js"]
+        RacerTests["test/racer_engine.test.js"]
         ButtonTests["test/ui_and_buttons.test.js"]
         ChromeE2E["test/e2e_browser.test.js"]
     end
 
-    Inputs --> CoreEngine
-    CoreEngine --> Renderer
-    CoreEngine -.-> UnitTests
+    Inputs --> CoreEngines
+    CoreEngines --> Renderer
+    SnakeEng -.-> SnakeTests
+    RacerEng -.-> RacerTests
     Inputs -.-> ButtonTests
     Renderer -.-> ChromeE2E
 ```
@@ -95,23 +100,24 @@ flowchart TD
 
 ## 🎮 Controls Cheat Sheet
 
-| Action | Keyboard | Touch / On-Screen |
-| :--- | :---: | :---: |
-| **Steer Up** | `↑` or `W` | `▲` (D-Pad) |
-| **Steer Down** | `↓` or `S` | `▼` (D-Pad) |
-| **Steer Left** | `←` or `A` | `◀` (D-Pad) |
-| **Steer Right** | `→` or `D` | `▶` (D-Pad) |
-| **Pause / Resume** | `Space` or `P` | `⏸ / ▶` button |
-| **Select Mode / Level** | `L` | `🕹️ Mode` button |
-| **Restart Game** | `R` | `Play Again` button |
-| **Toggle Mute** | `M` | `🔊 / 🔇` button |
-| **Switch Camera** | `C` | `🎥` button |
+| Action | Snake Mode | Cyber Racer Mode | Touch / On-Screen |
+| :--- | :---: | :---: | :---: |
+| **Steer Left** | `←` or `A` | `←` or `A` | `◀` (D-Pad) |
+| **Steer Right** | `→` or `D` | `→` or `D` | `▶` (D-Pad) |
+| **Steer Up / Boost** | `↑` or `W` | `↑` or `W` or `Shift` (Boost) | `▲` / `⚡` (Nitro) |
+| **Steer Down** | `↓` or `S` | - | `▼` (D-Pad) |
+| **Pause / Resume** | `Space` or `P` | `Space` or `P` | `⏸ / ▶` button |
+| **Select Mode / Level**| `L` | - | `🕹️ Mode` button |
+| **Toggle Fullscreen** | `F` | `F` | `⛶` button |
+| **Toggle Sound** | `M` | `M` | `🔊 / 🔇` button |
+| **Switch Camera** | `C` | - | `🎥` button |
+| **Restart Game** | `R` | `R` | `Play Again` button |
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Run Locally (Node.js or Python)
+### 1. Run Locally
 
 ```bash
 # Clone the repository
@@ -120,9 +126,9 @@ cd snake-game
 
 # Start local server
 python3 -m http.server 8000
-# or npx serve .
+# or npm run dev
 ```
-Open **[http://localhost:8000](http://localhost:8000)** in your browser.
+Open **[http://localhost:8000](http://localhost:8000)** (or **[http://localhost:8000/#racer](http://localhost:8000/#racer)**) in your browser.
 
 ---
 
@@ -130,59 +136,63 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 ```bash
 # Build and run with Docker Compose
-docker compose up -d
+docker-compose up -d
 
 # Open in browser at http://localhost:8080
 ```
 
 ---
 
-### 3. Run Automated Tests
-
-The repository includes a comprehensive 22-test suite combining pure engine physics, multi-mode rules, UI controls, and headless Chrome E2E browser tests:
+### 3. Run Automated Tests (31/31 Passing)
 
 ```bash
 npm test
 ```
 
 ```text
-✔ E2E HTTP Server: all game assets are served with HTTP 200 OK (30.1ms)
-✔ E2E Headless Chrome DOM: WebGL canvas and UI controls are properly mounted (1703.8ms)
-✔ E2E Headless Chrome WebGL: renders hardware accelerated 3D scene without crashing (2189.3ms)
-✔ Engine: createGameState initializes snake with 3 segments and default bounds (5.6ms)
-✔ Engine: movement advances the snake in the current direction (1.1ms)
-✔ Engine: isValidDirectionChange rejects direct 180 degree reversal (0.4ms)
-✔ Engine: wall collision triggers game over when crossing grid boundary (0.4ms)
-✔ Engine: self collision triggers game over when head hits body (0.7ms)
-✔ Engine: eating food increments score and grows the snake (0.5ms)
-✔ Engine: golden food awards 50 points and 2 growth units (0.5ms)
-✔ Engine: freeze food activates freeze effect and modifies current speed (1.0ms)
-✔ Modes: engine exports all 4 game modes and configs (1.9ms)
-✔ Modes [Portal]: snake wraps horizontally across boundaries without dying (1.2ms)
-✔ Modes [Portal]: snake wraps vertically across boundaries without dying (0.3ms)
-✔ Modes [Labyrinth]: generates obstacles and triggers obstacle collision game over (0.5ms)
-✔ Modes [Labyrinth]: food spawner never spawns food on obstacle tiles (5.8ms)
-✔ Modes [Hyper]: eating food ramps speed and doubles score multiplier (0.6ms)
-✔ Buttons & Controls: Difficulty selection updates base and current speeds (2.3ms)
-✔ Buttons & Controls: Pause toggle prevents engine ticks from moving the snake (0.7ms)
-✔ Buttons & Controls: D-Pad inputs map accurately to 4 directional vectors (1.6ms)
-✔ Buttons & Controls: Illegal 180 reversal attempts from D-pad/keyboard are rejected (0.3ms)
-✔ Buttons & Controls: Restart action resets score, snake length, and game over state (0.5ms)
-ℹ tests 22 | pass 22 | fail 0 | duration_ms 4114.5
+✔ E2E HTTP Server: all game assets are served with HTTP 200 OK
+✔ E2E Headless Chrome DOM: WebGL canvas and UI controls are properly mounted
+✔ E2E Headless Chrome WebGL: renders hardware accelerated 3D scene without crashing
+✔ Engine: createGameState initializes snake with 3 segments and default bounds
+✔ Engine: movement advances the snake in the current direction
+✔ Engine: isValidDirectionChange rejects direct 180 degree reversal
+✔ Engine: wall collision triggers game over when crossing grid boundary
+✔ Engine: self collision triggers game over when head hits body
+✔ Engine: eating food increments score and grows the snake
+✔ Engine: golden food awards 50 points and 2 growth units
+✔ Engine: freeze food activates freeze effect and modifies current speed
+✔ Modes: engine exports all 4 game modes and configs
+✔ Modes [Portal]: snake wraps horizontally across boundaries without dying
+✔ Modes [Portal]: snake wraps vertically across boundaries without dying
+✔ Modes [Labyrinth]: generates obstacles and triggers obstacle collision game over
+✔ Modes [Labyrinth]: food spawner never spawns food on obstacle tiles
+✔ Modes [Hyper]: eating food ramps speed and doubles score multiplier
+✔ Modes [Portal]: snake wraps left and bottom boundaries
+✔ Modes [Hyper]: speed ramp does not drop below minSpeed
+✔ Racer Engine: createRacerState initializes player at center lane
+✔ Racer Engine: steer changes targetLane within bounds (-1 to 1)
+✔ Racer Engine: activateBoost consumes nitro and sets boost timer
+✔ Racer Engine: tick advances distance, score, and smoothly interpolates lane
+✔ Racer Engine: collision with traffic triggers game over and crash event
+✔ Racer Engine: collecting nitro pickup replenishes nitro meter and awards bonus points
+✔ Racer Engine: resetRacer retains highScore and resets gameplay metrics
+✔ Buttons & Controls: Difficulty selection updates base and current speeds
+✔ Buttons & Controls: Pause toggle prevents engine ticks from moving the snake
+✔ Buttons & Controls: D-Pad inputs map accurately to 4 directional vectors
+✔ Buttons & Controls: Illegal 180 reversal attempts from D-pad/keyboard are rejected
+✔ Buttons & Controls: Restart action resets score, snake length, and game over state
+ℹ tests 31 | pass 31 | fail 0
 ```
 
 ---
 
 ## 🛠 DevOps & Cloud Infrastructure
  
- - **AWS S3 + CloudFront Deployment (`devops/aws/`)**: 1-click zero-cost ($0/mo Free Tier) cloud hosting with sub-10ms global edge delivery and automated cache invalidation ([Full AWS Guide](AWS_DEPLOYMENT_GUIDE.md)).
- - **Terraform Infrastructure as Code (`devops/aws/main.tf`)**: Spin up S3, CloudFront OAC, and TLS certificates with `terraform apply`.
- - **Docker Containerization (`Dockerfile` & `docker-compose.yml`)**: Multi-stage Nginx Alpine container serving static WebGL assets with Gzip compression (`npm run docker:up`).
- - **AI Code Review Quality Gate (`.coderabbit.yaml` & `scripts/coderabbit-check.sh`)**: Integrated CodeRabbit review rules and local pre-commit check verifying WebGL buffer cleanups, audio state machines, and CSS isolation (`npm run coderabbit:review`).
- - **GitHub Actions CI/CD (`devops/workflows/`)**: Multi-version test matrix against Node.js 18.x, 20.x, and 22.x running syntax verification, headless Chrome E2E tests, and automated AWS S3 deployment.
-
-> [!TIP]
-> Check out the complete [AWS Deployment & DevOps Guide](AWS_DEPLOYMENT_GUIDE.md) for step-by-step instructions on AWS CLI setup, S3 bucket sync, CloudFront invalidation, and Docker on AWS App Runner/ECR.
+- **AWS S3 + CloudFront Deployment (`devops/aws/`)**: 1-click zero-cost ($0/mo Free Tier) cloud hosting with sub-10ms global edge delivery and automated cache invalidation ([Full AWS Guide](AWS_DEPLOYMENT_GUIDE.md)).
+- **Terraform Infrastructure as Code (`devops/aws/main.tf`)**: Spin up S3, CloudFront OAC, and TLS certificates with `terraform apply`.
+- **Docker Containerization (`Dockerfile` & `docker-compose.yml`)**: Multi-stage Nginx Alpine container serving static WebGL assets with Gzip compression (`npm run docker:up`).
+- **AI Code Review Quality Gate (`.coderabbit.yaml` & `scripts/coderabbit-check.sh`)**: Integrated CodeRabbit review rules and local pre-commit check verifying WebGL buffer cleanups, audio state machines, and CSS isolation (`npm run coderabbit:review`).
+- **GitHub Actions CI/CD (`devops/workflows/`)**: Multi-version test matrix against Node.js 18.x, 20.x, and 22.x running syntax verification, headless Chrome E2E tests, and automated AWS S3 deployment.
 
 ---
 
@@ -203,7 +213,7 @@ Contributions are welcome! Check out our [Contributing Guide](CONTRIBUTING.md) f
 ```bash
 # Useful Contributor Commands
 npm run dev         # Start local dev server (http://localhost:8000)
-npm run check       # Validate JavaScript syntax
+npm run check       # Validate JavaScript syntax (engine, racer, game)
 npm run test:unit   # Run fast physics & control unit tests
 npm run test:e2e    # Run headless Chrome E2E browser tests
 npm run prepush     # Run full pre-push validation gate
